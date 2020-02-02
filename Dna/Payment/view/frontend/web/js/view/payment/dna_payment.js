@@ -16,8 +16,8 @@ define(
         'use strict';
         rendererList.push(
             {
-                type: 'sample_gateway',
-                component: 'Dna_Payment/js/view/payment/method-renderer/sample_gateway'
+                type: 'dna_payment',
+                component: 'Dna_Payment/js/view/payment/method-renderer/dna_payment'
             }
         );
         /** Add view logic here if needed */
