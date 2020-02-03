@@ -6,15 +6,25 @@
 /*global define*/
 define(
     [
+        'jquery',
+        'dnaPaymentApi',
         'Magento_Checkout/js/view/payment/default'
     ],
-    function (Component) {
+    function (
+        $,
+        dnaPaymentApi,
+        Component
+    ) {
         'use strict';
 
         return Component.extend({
             defaults: {
                 template: 'Dna_Payment/payment/form',
                 transactionResult: ''
+            },
+
+            placeOrder: function (...args) {
+                console.log(...args, 'here44', window.checkoutConfig.payment, window.checkoutConfig.order)
             },
 
             initObservable: function () {

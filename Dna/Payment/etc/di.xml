@@ -14,7 +14,7 @@
             <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
             <argument name="infoBlockType" xsi:type="string">Dna\Payment\Block\DnaPaymentInfo</argument>
             <argument name="valueHandlerPool" xsi:type="object">DnaPaymentValueHandlerPool</argument>
-            <argument name="commandPool" xsi:type="object">DnaPaymentCommandPool</argument>
+<!--            <argument name="commandPool" xsi:type="object">DnaPaymentCommandPool</argument>-->
         </arguments>
     </virtualType>
 
@@ -39,38 +39,38 @@
     </type>
 
     <!-- Commands infrastructure -->
-    <virtualType name="DnaPaymentCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">
-        <arguments>
-            <argument name="commands" xsi:type="array">
-                <item name="authorize" xsi:type="string">DnaPaymentAuthorizeCommand</item>
-            </argument>
-        </arguments>
-    </virtualType>
+<!--    <virtualType name="DnaPaymentCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">-->
+<!--        <arguments>-->
+<!--            <argument name="commands" xsi:type="array">-->
+<!--                <item name="authorize" xsi:type="string">DnaPaymentAuthorizeCommand</item>-->
+<!--            </argument>-->
+<!--        </arguments>-->
+<!--    </virtualType>-->
 
     <!-- Authorize command -->
-    <virtualType name="DnaPaymentAuthorizeCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
-        <arguments>
-            <argument name="requestBuilder" xsi:type="object">DnaPaymentAuthorizationRequest</argument>
-            <argument name="handler" xsi:type="object">DnaPaymentResponseHandlerComposite</argument>
-            <argument name="transferFactory" xsi:type="object">Dna\Payment\Gateway\Http\TransferFactory</argument>
-            <argument name="client" xsi:type="object">Dna\Payment\Gateway\Http\Client\ClientMock</argument>
-        </arguments>
-    </virtualType>
+<!--    <virtualType name="DnaPaymentAuthorizeCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">-->
+<!--        <arguments>-->
+<!--            <argument name="requestBuilder" xsi:type="object">DnaPaymentAuthorizationRequest</argument>-->
+<!--            <argument name="handler" xsi:type="object">DnaPaymentResponseHandlerComposite</argument>-->
+<!--            <argument name="transferFactory" xsi:type="object">Dna\Payment\Gateway\Http\TransferFactory</argument>-->
+<!--            <argument name="client" xsi:type="object">Dna\Payment\Gateway\Http\Client\ClientMock</argument>-->
+<!--        </arguments>-->
+<!--    </virtualType>-->
 
     <!-- Authorization Request -->
-    <virtualType name="DnaPaymentAuthorizationRequest" type="Magento\Payment\Gateway\Request\BuilderComposite">
-        <arguments>
-            <argument name="builders" xsi:type="array">
-                <item name="transaction" xsi:type="string">Dna\Payment\Gateway\Request\AuthorizationRequest</item>
-                <item name="mockData" xsi:type="string">Dna\Payment\Gateway\Request\MockDataRequest</item>
-            </argument>
-        </arguments>
-    </virtualType>
-    <type name="Dna\Payment\Gateway\Request\AuthorizationRequest">
-        <arguments>
-            <argument name="config" xsi:type="object">DnaPaymentConfig</argument>
-        </arguments>
-    </type>
+<!--    <virtualType name="DnaPaymentAuthorizationRequest" type="Magento\Payment\Gateway\Request\BuilderComposite">-->
+<!--        <arguments>-->
+<!--            <argument name="builders" xsi:type="array">-->
+<!--                <item name="transaction" xsi:type="string">Dna\Payment\Gateway\Request\AuthorizationRequest</item>-->
+<!--                <item name="mockData" xsi:type="string">Dna\Payment\Gateway\Request\MockDataRequest</item>-->
+<!--            </argument>-->
+<!--        </arguments>-->
+<!--    </virtualType>-->
+<!--    <type name="Dna\Payment\Gateway\Request\AuthorizationRequest">-->
+<!--        <arguments>-->
+<!--            <argument name="config" xsi:type="object">DnaPaymentConfig</argument>-->
+<!--        </arguments>-->
+<!--    </type>-->
 
     <!-- Void Request -->
     <type name="Dna\Payment\Gateway\Request\VoidRequest">
