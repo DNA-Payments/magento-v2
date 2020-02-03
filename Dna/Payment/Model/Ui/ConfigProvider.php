@@ -7,6 +7,9 @@ namespace Dna\Payment\Model\Ui;
 
 use Magento\Checkout\Model\ConfigProviderInterface;
 use Dna\Payment\Gateway\Http\Client\ClientMock;
+use Dna\Payment\Gateway\Config\use Dna\Payment\Gateway\Config\ConfigConfig;
+;
+use Magento\Framework\Session\SessionManagerInterface;
 
 /**
  * Class ConfigProvider
@@ -15,6 +18,17 @@ final class ConfigProvider implements ConfigProviderInterface
 {
     const CODE = 'dna_payment';
 
+    private $config;
+    private $session;
+
+    public function __construct(
+            Config $config,
+            SessionManagerInterface $session
+    ) {
+        $this->config = $config;
+        $this->session = $session;
+    }
+
     /**
      * Retrieve assoc array of checkout configuration
      *
@@ -22,13 +36,12 @@ final class ConfigProvider implements ConfigProviderInterface
      */
     public function getConfig()
     {
+        $storeId = $this->session->getStoreId();
+
         return [
             'payment' => [
                 self::CODE => [
-                    'transactionResults' => [
-                        ClientMock::SUCCESS => __('Success'),
-                        ClientMock::FAILURE => __('Fraud')
-                    ]
+                    'terminalId' => $this->config->getTerminalId($storeId),
                 ]
             ]
         ];
