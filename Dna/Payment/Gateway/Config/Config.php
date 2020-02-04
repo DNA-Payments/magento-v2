@@ -34,8 +34,8 @@ class Config extends \Magento\Payment\Gateway\Config\Config
      * @param int|null $storeId
           * @return string
           */
-     public function getTerminalId($storeId = null) {
-         return $this->getValue(Config::TERMINAL_ID, $storeId);
+     public function getTerminalId() {
+         return $this->getValue(Config::TERMINAL_ID);
      }
 
 }
