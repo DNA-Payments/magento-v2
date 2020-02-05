@@ -8,7 +8,9 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 class Config extends \Magento\Payment\Gateway\Config\Config
 {
     const KEY_ACTIVE = 'active';
-    const TERMINAL_ID = 'terminal_id';
+    const KEY_TERMINAL_ID = 'terminal_id';
+    const KEY_CLIENT_ID = 'client_id';
+    const KEY_CLIENT_SECRET = 'client_secret';
 
     /**
      * Braintree config constructor
@@ -26,16 +28,19 @@ class Config extends \Magento\Payment\Gateway\Config\Config
         parent::__construct($scopeConfig, $methodCode, $pathPattern);
     }
 
+    public function isActive($storeId = null) {
+        return (bool) $this->getValue(self::KEY_ACTIVE, $storeId);
+    }
+     public function getTerminalId($storeId = null) {
+        return $this->getValue(Config::KEY_TERMINAL_ID, $storeId);
+     }
 
+     public function getClientId($storeId = null) {
+        return $this->getValue(Config::KEY_CLIENT_ID, $storeId);
+     }
 
-    /**
-     * Gets terminal ID.
-     *
-     * @param int|null $storeId
-          * @return string
-          */
-     public function getTerminalId() {
-         return $this->getValue(Config::TERMINAL_ID);
+     public function getClientSecret($storeId = null) {
+        return $this->getValue(Config::KEY_CLIENT_SECRET, $storeId);
      }
 
 }

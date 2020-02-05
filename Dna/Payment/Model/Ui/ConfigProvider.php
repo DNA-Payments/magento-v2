@@ -44,12 +44,16 @@ final class ConfigProvider implements ConfigProviderInterface
      *
      * @return array
      */
-    public function getConfig()
-    {
+    public function getConfig() {
+        $storeId = $this->session->getStoreId();
+
         return [
             'payment' => [
                 self::CODE => [
-                    'terminalId' => $this->config->getTerminalId()
+                    'isActive' => $this->config->isActive($storeId),
+                    'terminal_id' => $this->config->getTerminalId($storeId),
+                    'client_id' => $this->config->getClientId($storeId),
+                    'client_secret' => $this->config->getClientSecret($storeId),
                 ]
             ]
         ];

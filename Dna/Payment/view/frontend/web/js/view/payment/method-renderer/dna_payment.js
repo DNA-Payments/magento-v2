@@ -24,15 +24,32 @@ define(
             },
 
             placeOrder: function (...args) {
-                console.log(...args, 'here44', window.checkoutConfig.payment, window.checkoutConfig.order)
+                const self = this;
+                const { dnaPayments } = window;
+
+                $.ajax({
+                    type: "POST",
+                    url: dnaPayments.Config().TokenAPIConfig.url,
+                    data: self.createAuthRequestData(),
+                    dataType: "json"
+                }).then(
+                    function(auth) {
+                        alert('auth')
+                    },
+                    function() {
+                        alert("Authorization request failed");
+
+
+                        //pay({ token_type: "Bearer", access_token: "" });
+                    }
+                );
+                console.log(...args, 'here44', window.checkoutConfig.payment, window.checkoutConfig)
             },
 
             initObservable: function () {
 
                 this._super()
-                    .observe([
-                        'transactionResult'
-                    ]);
+                    .observe([]);
                 return this;
             },
 
@@ -56,6 +73,21 @@ define(
                         'transaction_result': value
                     }
                 });
+            },
+
+            createAuthRequestData: function(options = {}) {
+                const { terminal_id, client_id, client_secret } = window.checkoutConfig.payment[this.getCode()];
+                return {
+                    grant_type: "client_credentials",
+                    scope: "payment",
+                    client_id: client_id,
+                    client_secret: client_secret,
+                    terminal: terminal_id,
+                    ...options,
+                    invoiceID: '1111',
+                    amount: 111,
+                    currency: "11111",
+                };
             }
         });
     }
