@@ -19,8 +19,6 @@ final class ConfigProvider implements ConfigProviderInterface
 {
     const CODE = 'dna_payment';
 
-
-
     /**
      * @var Config
     */
@@ -51,10 +49,12 @@ final class ConfigProvider implements ConfigProviderInterface
             'payment' => [
                 self::CODE => [
                     'isActive' => $this->config->isActive($storeId),
-                    'terminal_id' => $this->config->getTerminalId($storeId),
-                    'client_id' => $this->config->getClientId($storeId),
-                    'client_secret' => $this->config->getClientSecret($storeId),
+                    'terminal_id' => $this->config->getTestMode($storeId) ? $this->config->getTerminalIdTest($storeId) : $this->config->getTerminalId($storeId),
+                    'client_id' => $this->config->getTestMode($storeId) ? $this->config->getClientIdTest($storeId) : $this->config->getClientId($storeId),
+                    'client_secret' => $this->config->getTestMode($storeId) ? $this->config->getClientSecretTest($storeId) : $this->config->getClientSecret($storeId),
                     'description' => $this->config->getDescription($storeId),
+                    'test_mode' => $this->config->getTestMode($storeId),
+                    'js_url_test' => $this->config->getJsUrlTest($storeId)
                 ]
             ]
         ];

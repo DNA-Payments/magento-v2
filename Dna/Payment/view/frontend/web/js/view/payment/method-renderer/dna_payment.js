@@ -7,7 +7,6 @@
 define(
     [
         'jquery',
-        'dnaPaymentApi',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote'
@@ -15,7 +14,6 @@ define(
     ],
     function (
         $,
-        dnaPaymentApi,
         Component,
         globalMessageList,
         quote
@@ -25,14 +23,43 @@ define(
         return Component.extend({
             defaults: {
                 template: 'Dna_Payment/payment/form',
-                transactionResult: ''
+                transactionResult: '',
+                scriptLoaded: false
             },
 
             placeOrder: function (...args) {
                 const self = this;
-                const { dnaPayments } = window;
+                console.log(self.scriptLoaded(), window.checkoutConfig.payment[this.getCode()]);
+                if(self.scriptLoaded()) {
+                    self.makeAuth();
+                } else {
+                    self.loadScript(() => {
+                        self.makeAuth();
+                    })
+                }
+            },
+            initObservable: function () {
 
-                // console.log( ,window.checkoutConfig ,'getDnaConfig');
+                this._super()
+                    .observe([
+                        'transactionResult',
+                        'scriptLoaded'
+                    ]);
+
+
+                this.grandTotalAmount = quote.totals()['base_grand_total'];
+
+                quote.totals.subscribe(function () {
+                    if (self.grandTotalAmount !== quote.totals()['base_grand_total']) {
+                        self.grandTotalAmount = quote.totals()['base_grand_total'];
+                    }
+                });
+
+                return this;
+            },
+            makeAuth() {
+                const self = this;
+                const { dnaPayments } = window;
 
                 $.ajax({
                     type: "POST",
@@ -49,26 +76,6 @@ define(
                     }
                 );
             },
-
-            initObservable: function () {
-
-                this._super()
-                    .observe([
-                        'transactionResult'
-                    ]);
-
-
-                this.grandTotalAmount = quote.totals()['base_grand_total'];
-
-                quote.totals.subscribe(function () {
-                    if (self.grandTotalAmount !== quote.totals()['base_grand_total']) {
-                        self.grandTotalAmount = quote.totals()['base_grand_total'];
-                    }
-                });
-
-                return this;
-            },
-
             getCode: function() {
                 return 'dna_payment';
             },
@@ -132,6 +139,19 @@ define(
                     auth: auth
                 };
             },
+            loadScript: function (cb) {
+                const self = this,
+                    state = self.scriptLoaded;
+
+                $('body').trigger('processStart');
+                require([
+                    ...self.getScriptUrl()
+                ], function () {
+                    state(true);
+                    $('body').trigger('processStop');
+                    cb();
+                });
+            },
             getCurrency: function() {
                 const totals = quote.totals();
                 return totals['base_currency_code'];
@@ -154,6 +174,14 @@ define(
             getEmail: function () {
                 if(quote.guestEmail) return quote.guestEmail;
                 else return window.checkoutConfig.customerData.email;
+            },
+            getScriptUrl() {
+                const payment = window.checkoutConfig.payment[this.getCode()];
+                return [
+                    payment.test_mode
+                        ? payment.js_url_test
+                        : 'https://pay.dnapayments.com/payment-api.js'
+                ];
             },
             showError: function (errorMessage) {
                 globalMessageList.addErrorMessage({

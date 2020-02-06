@@ -69,6 +69,11 @@
                 <item name="payment/braintree/client_id" xsi:type="string">1</item>
                 <item name="payment/braintree/client_secret" xsi:type="string">1</item>
                 <item name="payment/braintree/description" xsi:type="string">1</item>
+
+                <item name="payment/braintree/js_url_test" xsi:type="string">1</item>
+                <item name="payment/braintree/terminal_id_test" xsi:type="string">1</item>
+                <item name="payment/braintree/client_id_test" xsi:type="string">1</item>
+                <item name="payment/braintree/client_secret_test" xsi:type="string">1</item>
             </argument>
         </arguments>
     </type>
