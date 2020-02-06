@@ -11,6 +11,7 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     const KEY_TERMINAL_ID = 'terminal_id';
     const KEY_CLIENT_ID = 'client_id';
     const KEY_CLIENT_SECRET = 'client_secret';
+    const KEY_DESCRIPTION = 'description';
 
     /**
      * Braintree config constructor
@@ -43,4 +44,7 @@ class Config extends \Magento\Payment\Gateway\Config\Config
         return $this->getValue(Config::KEY_CLIENT_SECRET, $storeId);
      }
 
+      public function getDescription($storeId = null) {
+         return $this->getValue(Config::KEY_DESCRIPTION, $storeId);
+      }
 }

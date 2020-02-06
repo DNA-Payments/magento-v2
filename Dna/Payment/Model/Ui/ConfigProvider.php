@@ -54,6 +54,7 @@ final class ConfigProvider implements ConfigProviderInterface
                     'terminal_id' => $this->config->getTerminalId($storeId),
                     'client_id' => $this->config->getClientId($storeId),
                     'client_secret' => $this->config->getClientSecret($storeId),
+                    'description' => $this->config->getDescription($storeId),
                 ]
             ]
         ];
