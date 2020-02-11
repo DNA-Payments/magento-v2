@@ -6,30 +6,37 @@
 /*global define*/
 define(
     [
+        'ko',
         'jquery',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
-        'Magento_Checkout/js/model/quote'
-
+        'Magento_Checkout/js/model/quote',
+        'Magento_Checkout/js/action/place-order'
     ],
     function (
+        ko,
         $,
         Component,
         globalMessageList,
-        quote
+        quote,
+        placeOrderAction
     ) {
         'use strict';
 
         return Component.extend({
+            isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
             defaults: {
                 template: 'Dna_Payment/payment/form',
-                transactionResult: '',
                 scriptLoaded: false
             },
-
-            placeOrder: function (...args) {
+            placeOrder: function (args) {
                 const self = this;
-                console.log(self.scriptLoaded(), window.checkoutConfig.payment[this.getCode()]);
+                console.log(self.scriptLoaded(), window.checkoutConfig.defaultSuccessPageUrl);
+
+                this.makeOrder()
+                return;
+
+
                 if(self.scriptLoaded()) {
                     self.makeAuth();
                 } else {
@@ -42,7 +49,6 @@ define(
 
                 this._super()
                     .observe([
-                        'transactionResult',
                         'scriptLoaded'
                     ]);
 
@@ -55,7 +61,33 @@ define(
                     }
                 });
 
+                quote.billingAddress.subscribe(function (address) {
+                    this.isPlaceOrderActionAllowed(address !== null);
+                }, this);
+
                 return this;
+            },
+            makeOrder() {
+                const self = this;
+
+                if (this.validate() &&
+                    this.isPlaceOrderActionAllowed() === true
+                ) {
+                    this.isPlaceOrderActionAllowed(false);
+
+                    this.getPlaceOrderDeferredObject()
+                        .done(
+                            function (...args) {
+                                console.log(...args, 'args')
+                            }
+                        ).always(
+                        function () {
+                            self.isPlaceOrderActionAllowed(true);
+                        }
+                    );
+
+                    return true;
+                }
             },
             makeAuth() {
                 const self = this;
@@ -67,8 +99,6 @@ define(
                     data: self.createAuthRequestData(),
                     dataType: "json"
                 }).then((auth) => {
-                        alert('auth');
-                        return;
                         dnaPayments.pay(this.createPaymentObject(auth))
                     },
                     function() {
@@ -76,28 +106,6 @@ define(
                     }
                 );
             },
-            getCode: function() {
-                return 'dna_payment';
-            },
-
-            getData: function() {
-                return {
-                    'method': this.item.method,
-                    'additional_data': {
-                        'transaction_result': this.transactionResult()
-                    }
-                };
-            },
-
-            getTransactionResults: function() {
-                return _.map(window.checkoutConfig.payment.dna_payment.transactionResults, function(value, key) {
-                    return {
-                        'value': key,
-                        'transaction_result': value
-                    }
-                });
-            },
-
             createAuthRequestData: function(options = {}) {
                 const { terminal_id, client_id, client_secret } = window.checkoutConfig.payment[this.getCode()];
                 const { entity_id } = window.checkoutConfig.quoteData;
@@ -113,32 +121,6 @@ define(
                     ...options
                 };
             },
-            createPaymentObject: function(auth) {
-                const { terminal_id, description } = window.checkoutConfig.payment[this.getCode()];
-                const { entity_id } = window.checkoutConfig.quoteData;
-                const { accountCountry, accountCity, street1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
-                return {
-                    terminal: terminal_id,
-                    invoiceId: entity_id,
-                    amount: this.getAmount(),
-                    currency: this.getCurrency(),
-                    backLink: "https://www.parkway-media.co.uk/",
-                    failureBackLink: "https://www.parkway-media.co.uk/",
-                    postLink: "https://pay.dnapayments.com",
-                    failurePostLink: "https://www.parkway-media.co.uk/",
-                    accountId: "uuid2",
-                    language: "eng",
-                    description: description,
-                    accountCountry: accountCountry, //account-holder.address.country ISO 3166-1 alpha-2 country code (max.length 2)
-                    accountCity: accountCity, //max.length 50
-                    accountStreet1: street1, //max.length 50
-                    accountEmail: self.getEmail(), //max.length 256
-                    accountFirstName: accountFirstName, //max.length 32
-                    accountLastName: accountLastName, //max.length 32
-                    accountPostalCode: accountPostalCode, //max.length 13
-                    auth: auth
-                };
-            },
             loadScript: function (cb) {
                 const self = this,
                     state = self.scriptLoaded;
@@ -151,6 +133,46 @@ define(
                     $('body').trigger('processStop');
                     cb();
                 });
+            },
+            createPaymentObject: function(auth) {
+                const { terminal_id, description } = window.checkoutConfig.payment[this.getCode()];
+                const { entity_id } = window.checkoutConfig.quoteData;
+                const { accountCountry, accountCity, street1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
+                return {
+                    terminal: terminal_id,
+                    invoiceId: entity_id,
+                    amount: this.getAmount(),
+                    currency: this.getCurrency(),
+                    backLink: window.checkoutConfig.defaultSuccessPageUrl,
+                    failureBackLink: "https://www.parkway-media.co.uk/",
+                    postLink: window.checkoutConfig.defaultSuccessPageUrl,
+                    failurePostLink: "https://www.parkway-media.co.uk/",
+                    accountId: "uuid2",
+                    language: "eng",
+                    description: description,
+                    accountCountry: accountCountry, //account-holder.address.country ISO 3166-1 alpha-2 country code (max.length 2)
+                    accountCity: accountCity, //max.length 50
+                    accountStreet1: street1, //max.length 50
+                    accountEmail: this.getEmail(), //max.length 256
+                    accountFirstName: accountFirstName, //max.length 32
+                    accountLastName: accountLastName, //max.length 32
+                    accountPostalCode: accountPostalCode, //max.length 13
+                    auth: auth
+                };
+            },
+            getPlaceOrderDeferredObject: function () {
+                return $.when(
+                    placeOrderAction(this.getData())
+                );
+            },
+            getCode: function() {
+                return 'dna_payment';
+            },
+            getData: function() {
+                return {
+                    'method': this.item.method,
+                    'additional_data': null
+                };
             },
             getCurrency: function() {
                 const totals = quote.totals();
@@ -165,7 +187,7 @@ define(
                     accountCountry: address.countryId,
                     accountCity: address.city,
                     street1: address.street && Array.isArray(address.street) ? address.street.join(' ') : '',
-                    accountEmail: self.getEmail(),
+                    accountEmail: this.getEmail(),
                     accountFirstName: address.firstname,
                     accountLastName: address.lastname,
                     accountPostalCode: address.postcode
@@ -182,6 +204,9 @@ define(
                         ? payment.js_url_test
                         : 'https://pay.dnapayments.com/payment-api.js'
                 ];
+            },
+            validate() {
+                return true
             },
             showError: function (errorMessage) {
                 globalMessageList.addErrorMessage({
