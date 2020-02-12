@@ -11,7 +11,8 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'Magento_Checkout/js/action/place-order'
+        'Magento_Checkout/js/action/place-order',
+        'mage/url'
     ],
     function (
         ko,
@@ -19,7 +20,8 @@ define(
         Component,
         globalMessageList,
         quote,
-        placeOrderAction
+        placeOrderAction,
+        url
     ) {
         'use strict';
 
@@ -31,7 +33,7 @@ define(
             },
             placeOrder: function (args) {
                 const self = this;
-                console.log(self.scriptLoaded(), window.checkoutConfig.defaultSuccessPageUrl);
+                console.log(self.scriptLoaded(), window.checkoutConfig);
 
                 this.makeOrder()
                 return;
@@ -79,6 +81,9 @@ define(
                         .done(
                             function (...args) {
                                 console.log(...args, 'args')
+                                alert('here')
+                                window.location.replace(url.build(window.checkoutConfig.defaultSuccessPageUrl));
+
                             }
                         ).always(
                         function () {
