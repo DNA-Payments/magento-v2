@@ -33,6 +33,7 @@ define(
             placeOrder: function (args) {
                 const self = this;
                 this.makeOrder(() => {
+                    return;
                     if(self.scriptLoaded()) {
                         self.makeAuth();
                     } else {

@@ -1,9 +1,31 @@
 <?xml version="1.0" ?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
-    <route method="POST" url="/V1/dna-payment/order">
-        <service class="Dna\Payment\Api\OrderManagementInterface" method="getPost"/>
+    <route method="POST" url="/V1/guest-carts/:cartId/payment-information">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="savePaymentInformationAndPlaceOrder"/>
         <resources>
             <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <route url="/V1/carts/mine/payment-information" method="POST">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="savePaymentInformationAndPlaceOrder"/>
+        <resources>
+            <resource ref="self" />
+        </resources>
+        <data>
+            <parameter name="cartId" force="true">%cart_id%</parameter>
+        </data>
+    </route>
+
+    <route url="/V1/cards/confirm" method="POST">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="confirmOrder"/>
+        <resources>
+            <resource ref="anonymous" />
+        </resources>
+    </route>
+    <route url="/V1/cards/close" method="POST">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="closeOrder"/>
+        <resources>
+            <resource ref="anonymous" />
         </resources>
     </route>
 </routes>
