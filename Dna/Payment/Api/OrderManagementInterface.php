@@ -2,7 +2,7 @@
 namespace Dna\Payment\Api;
  
  
-interface PostManagementInterface {
+interface OrderManagementInterface {
 
 
 	/**

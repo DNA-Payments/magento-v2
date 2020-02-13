@@ -8,7 +8,7 @@
 
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
-    <preference for="Dna\Payment\Api\PostManagementInterface" type="Dna\Payment\Model\PostManagement"/>
+    <preference for="Dna\Payment\Api\OrderManagementInterface" type="Dna\Payment\Model\OrderManagement"/>
     <!-- Payment Method Facade configuration -->
     <virtualType name="DnaPaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
         <arguments>

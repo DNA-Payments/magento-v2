@@ -2,7 +2,7 @@
 namespace Dna\Payment\Model;
 use Magento\Sales\Api\OrderRepositoryInterface;
 
-class PostManagement {
+class OrderManagement {
 
     public function __construct(
         OrderRepositoryInterface $orderRepository
@@ -23,4 +23,5 @@ class PostManagement {
             $this->messageManager->addExceptionMessage($e, $e->getMessage());
         }
     }
+
 }

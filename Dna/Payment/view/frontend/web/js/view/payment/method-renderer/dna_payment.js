@@ -11,8 +11,7 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'Magento_Checkout/js/action/place-order',
-        'mage/url'
+        'Magento_Checkout/js/action/place-order'
     ],
     function (
         ko,
@@ -20,8 +19,7 @@ define(
         Component,
         globalMessageList,
         quote,
-        placeOrderAction,
-        url
+        placeOrderAction
     ) {
         'use strict';
 
@@ -29,29 +27,27 @@ define(
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
             defaults: {
                 template: 'Dna_Payment/payment/form',
-                scriptLoaded: false
+                scriptLoaded: false,
+                orderId: null,
             },
             placeOrder: function (args) {
                 const self = this;
-                console.log(self.scriptLoaded(), window.checkoutConfig);
-
-                this.makeOrder()
-                return;
-
-
-                if(self.scriptLoaded()) {
-                    self.makeAuth();
-                } else {
-                    self.loadScript(() => {
+                this.makeOrder(() => {
+                    if(self.scriptLoaded()) {
                         self.makeAuth();
-                    })
-                }
+                    } else {
+                        self.loadScript(() => {
+                            self.makeAuth();
+                        })
+                    }
+                })
             },
             initObservable: function () {
 
                 this._super()
                     .observe([
-                        'scriptLoaded'
+                        'scriptLoaded',
+                        'orderId'
                     ]);
 
 
@@ -69,9 +65,8 @@ define(
 
                 return this;
             },
-            makeOrder() {
+            makeOrder(cb) {
                 const self = this;
-
                 if (this.validate() &&
                     this.isPlaceOrderActionAllowed() === true
                 ) {
@@ -79,17 +74,18 @@ define(
 
                     this.getPlaceOrderDeferredObject()
                         .done(
-                            function (...args) {
-                                console.log(...args, 'args')
-                                alert('here')
-                                window.location.replace(url.build(window.checkoutConfig.defaultSuccessPageUrl));
-
+                            function (orderId) {
+                                self.orderId(orderId);
+                                cb();
                             }
-                        ).always(
-                        function () {
-                            self.isPlaceOrderActionAllowed(true);
-                        }
-                    );
+                        ).fail(function(data){
+                            self.orderId(null);
+                            self.showError('Could\'t find order')
+                        }).always(
+                            function () {
+                                self.isPlaceOrderActionAllowed(true);
+                            }
+                        );
 
                     return true;
                 }
@@ -97,7 +93,8 @@ define(
             makeAuth() {
                 const self = this;
                 const { dnaPayments } = window;
-
+                console.log(self.createAuthRequestData())
+                return;
                 $.ajax({
                     type: "POST",
                     url: dnaPayments.Config().TokenAPIConfig.url,
@@ -113,14 +110,13 @@ define(
             },
             createAuthRequestData: function(options = {}) {
                 const { terminal_id, client_id, client_secret } = window.checkoutConfig.payment[this.getCode()];
-                const { entity_id } = window.checkoutConfig.quoteData;
                 return {
                     grant_type: "client_credentials",
                     scope: "payment",
                     client_id: client_id,
                     client_secret: client_secret,
                     terminal: terminal_id,
-                    invoiceID: entity_id,
+                    invoiceID: this.orderId(),
                     amount: this.getAmount(),
                     currency: this.getCurrency(),
                     ...options
@@ -141,11 +137,10 @@ define(
             },
             createPaymentObject: function(auth) {
                 const { terminal_id, description } = window.checkoutConfig.payment[this.getCode()];
-                const { entity_id } = window.checkoutConfig.quoteData;
                 const { accountCountry, accountCity, street1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
                 return {
                     terminal: terminal_id,
-                    invoiceId: entity_id,
+                    invoiceId: this.orderId(),
                     amount: this.getAmount(),
                     currency: this.getCurrency(),
                     backLink: window.checkoutConfig.defaultSuccessPageUrl,
@@ -155,13 +150,13 @@ define(
                     accountId: "uuid2",
                     language: "eng",
                     description: description,
-                    accountCountry: accountCountry, //account-holder.address.country ISO 3166-1 alpha-2 country code (max.length 2)
-                    accountCity: accountCity, //max.length 50
-                    accountStreet1: street1, //max.length 50
-                    accountEmail: this.getEmail(), //max.length 256
-                    accountFirstName: accountFirstName, //max.length 32
-                    accountLastName: accountLastName, //max.length 32
-                    accountPostalCode: accountPostalCode, //max.length 13
+                    accountCountry: accountCountry,
+                    accountCity: accountCity,
+                    accountStreet1: street1,
+                    accountEmail: this.getEmail(),
+                    accountFirstName: accountFirstName,
+                    accountLastName: accountLastName,
+                    accountPostalCode: accountPostalCode,
                     auth: auth
                 };
             },
@@ -211,9 +206,48 @@ define(
                 ];
             },
             validate() {
-                return true
+                const { accountCountry, accountCity, accountStreet1, accountEmail, accountFirstName, accountLastName, accountPostalCode } = this.createPaymentObject();
+                let isError = false;
+
+                if(!accountCountry || accountCountry.length > 2) {
+                    this.showError('Country field is required and code length must be less than 2 symbols');
+                    isError = true;
+                }
+
+                if(!accountCity || accountCity.length > 50) {
+                    this.showError('City field is required and length must be less than 50 symbols');
+                    isError = true;
+                }
+
+                if(!accountStreet1 || accountStreet1.length > 50) {
+                    this.showError('Street field is required and length must be less than 50 symbols');
+                    isError = true;
+                }
+
+                if(!accountEmail || accountEmail.length > 256) {
+                    this.showError('Email field is required and length must be less than 256 symbols');
+                    isError = true;
+                }
+
+                if(!accountFirstName || accountFirstName.length > 32) {
+                    this.showError('Firstname field is required and length must be less than 32 symbols');
+                    isError = true;
+                }
+
+                if(!accountLastName || accountLastName.length > 32) {
+                    this.showError('Lastname field is required and length must be less than 32 symbols');
+                    isError = true;
+                }
+
+                if(!accountPostalCode || accountPostalCode.length > 13) {
+                    this.showError('Postal code field is required and length must be less than 13 symbols');
+                    isError = true;
+                }
+
+                return !isError;
             },
             showError: function (errorMessage) {
+                console.log(errorMessage)
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
