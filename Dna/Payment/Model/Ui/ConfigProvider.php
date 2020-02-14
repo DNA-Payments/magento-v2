@@ -9,6 +9,7 @@ use Magento\Checkout\Model\ConfigProviderInterface;
 use Dna\Payment\Gateway\Http\Client\ClientMock;
 use Dna\Payment\Gateway\Config\Config;
 use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Framework\UrlInterface;
 
 /**
  * Class ConfigProvider
@@ -29,12 +30,19 @@ final class ConfigProvider implements ConfigProviderInterface
     */
     private $session;
 
+    /**
+     * @var UrlInterface
+     */
+    protected $urlBuilder;
+
     public function __construct(
             Config $config,
-            SessionManagerInterface $session
+            SessionManagerInterface $session,
+            UrlInterface $urlBuilder
     ) {
         $this->config = $config;
         $this->session = $session;
+        $this->urlBuilder = $urlBuilder;
     }
 
     /**
@@ -54,7 +62,9 @@ final class ConfigProvider implements ConfigProviderInterface
                     'client_secret' => $this->config->getTestMode($storeId) ? $this->config->getClientSecretTest($storeId) : $this->config->getClientSecret($storeId),
                     'description' => $this->config->getDescription($storeId),
                     'test_mode' => $this->config->getTestMode($storeId),
-                    'js_url_test' => $this->config->getJsUrlTest($storeId)
+                    'js_url_test' => $this->config->getJsUrlTest($storeId),
+                    'confirm_link' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
+                    'close_link' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/close')
                 ]
             ]
         ];

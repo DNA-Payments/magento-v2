@@ -11,7 +11,7 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'Magento_Checkout/js/action/place-order'
+        'dna-place-order'
     ],
     function (
         ko,
@@ -33,7 +33,6 @@ define(
             placeOrder: function (args) {
                 const self = this;
                 this.makeOrder(() => {
-                    return;
                     if(self.scriptLoaded()) {
                         self.makeAuth();
                     } else {
@@ -94,8 +93,6 @@ define(
             makeAuth() {
                 const self = this;
                 const { dnaPayments } = window;
-                console.log(self.createAuthRequestData())
-                return;
                 $.ajax({
                     type: "POST",
                     url: dnaPayments.Config().TokenAPIConfig.url,
@@ -137,7 +134,7 @@ define(
                 });
             },
             createPaymentObject: function(auth) {
-                const { terminal_id, description } = window.checkoutConfig.payment[this.getCode()];
+                const { terminal_id, description, confirm_link, close_link } = window.checkoutConfig.payment[this.getCode()];
                 const { accountCountry, accountCity, street1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
                 return {
                     terminal: terminal_id,
@@ -145,10 +142,10 @@ define(
                     amount: this.getAmount(),
                     currency: this.getCurrency(),
                     backLink: window.checkoutConfig.defaultSuccessPageUrl,
-                    failureBackLink: "https://www.parkway-media.co.uk/",
-                    postLink: window.checkoutConfig.defaultSuccessPageUrl,
-                    failurePostLink: "https://www.parkway-media.co.uk/",
-                    accountId: "uuid2",
+                    failureBackLink: window.checkoutConfig.checkoutUrl, //: TODO add error page
+                    postLink: close_link,
+                    failurePostLink: confirm_link,
+                    accountId: "uuid2", //: TODO add error page
                     language: "eng",
                     description: description,
                     accountCountry: accountCountry,
@@ -248,7 +245,6 @@ define(
                 return !isError;
             },
             showError: function (errorMessage) {
-                console.log(errorMessage)
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
