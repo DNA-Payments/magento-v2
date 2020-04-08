@@ -11,7 +11,6 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'dna-place-order',
         'dna-payment-api'
     ],
     function (
@@ -19,22 +18,16 @@ define(
         $,
         Component,
         globalMessageList,
-        quote,
-        placeOrderAction
+        quote
     ) {
         'use strict';
 
         return Component.extend({
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
+            redirectAfterPlaceOrder: false,
             defaults: {
                 template: 'Dna_Payment/payment/form',
                 orderId: null,
-            },
-            placeOrder: function (args) {
-                const self = this;
-                this.makeOrder(() => {
-                    self.pay()
-                })
             },
             initObservable: function () {
                 this._super()
@@ -55,8 +48,13 @@ define(
 
                 return this;
             },
+            afterPlaceOrder: function () {
+                const self = this;
+                self.pay()
+            },
             pay() {
                 const self = this;
+                this.orderId(new Date().getTime().toString())
                 const { test_mode } = window.checkoutConfig.payment[this.getCode()];
                 if(test_mode) {
                     window.activatePaymentTestMode();
@@ -70,30 +68,6 @@ define(
                     }
                     window.openPaymentPage(self.createPaymentObject(result.value))
                 });
-            },
-            makeOrder(cb) {
-                const self = this;
-                if (this.validate() &&
-                    this.isPlaceOrderActionAllowed() === true
-                ) {
-                    this.isPlaceOrderActionAllowed(false);
-
-                    this.getPlaceOrderDeferredObject()
-                        .done(
-                            function (orderId) {
-                                self.orderId(orderId);
-                                cb();
-                            }
-                        ).fail(function(data){
-
-                        }).always(
-                            function () {
-                                self.isPlaceOrderActionAllowed(true);
-                            }
-                        );
-
-                    return true;
-                }
             },
             createAuthRequestData: function() {
                 const { terminal_id, client_id, client_secret } = window.checkoutConfig.payment[this.getCode()];
@@ -130,11 +104,6 @@ define(
                     accountPostalCode: accountPostalCode,
                     auth: auth
                 };
-            },
-            getPlaceOrderDeferredObject: function () {
-                return $.when(
-                    placeOrderAction(this.getData())
-                );
             },
             getCode: function() {
                 return 'dna_payment';
