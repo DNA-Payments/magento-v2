@@ -3,6 +3,11 @@
 namespace Dna\Payment\Api;
 
 interface OrderManagementInterface {
+      /**
+      * Set start status and get order id
+      * @return string
+      **/
+      public function startAndGetOrder();
 
      /**
       * Confirm payment order

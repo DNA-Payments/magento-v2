@@ -8,14 +8,17 @@ define(
     [
         'ko',
         'jquery',
+        'mage/storage',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
+        'Magento_Checkout/js/model/url-builder',
         'dna-payment-api'
     ],
     function (
         ko,
         $,
+        storage,
         Component,
         globalMessageList,
         quote
@@ -50,7 +53,16 @@ define(
             },
             afterPlaceOrder: function () {
                 const self = this;
-                self.pay()
+                this.getOrder()
+                // self.pay()
+            },
+            getOrder(){
+                storage.post('rest/default/V1/dna-payment/start-and-get')
+                    .done(function (response) {
+                        console.log(response, 'response')
+                    }).fail(function (response) {
+                        console.log(response, 'fail')
+                    });
             },
             pay() {
                 const self = this;
