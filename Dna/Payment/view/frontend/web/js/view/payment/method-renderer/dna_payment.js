@@ -61,7 +61,6 @@ define(
                 if(test_mode) {
                     window.activatePaymentTestMode();
                 }
-                console.log(self.createAuthRequestData())
                 window.authPaymentService(self.createAuthRequestData(), {
                     useRedirect: true
                 }).then((result) => {
