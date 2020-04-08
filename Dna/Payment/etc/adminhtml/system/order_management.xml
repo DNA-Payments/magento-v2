@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <group id="dna_payment_order_management" translate="label" type="text" sortOrder="500" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>Order Management</label>
+        <field id="order_status_pending" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Order status when payment is pending</label>
+            <source_model>Dna\Payment\Model\Status</source_model>
+            <config_path>payment/dna_payment/order_status_pending</config_path>
+        </field>
+        <field id="order_status_success" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Order status when payment is success</label>
+            <source_model>Dna\Payment\Model\Status</source_model>
+            <config_path>payment/dna_payment/order_status_success</config_path>
+        </field>
+        <field id="order_status_failure" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Order status when payment is failure</label>
+            <source_model>Dna\Payment\Model\Status</source_model>
+            <config_path>payment/dna_payment/order_status_failure</config_path>
+        </field>
+    </group>
+</config>

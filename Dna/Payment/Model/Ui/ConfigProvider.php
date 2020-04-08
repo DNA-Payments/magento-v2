@@ -60,9 +60,8 @@ final class ConfigProvider implements ConfigProviderInterface
                     'terminal_id' => $this->config->getTestMode($storeId) ? $this->config->getTerminalIdTest($storeId) : $this->config->getTerminalId($storeId),
                     'client_id' => $this->config->getTestMode($storeId) ? $this->config->getClientIdTest($storeId) : $this->config->getClientId($storeId),
                     'client_secret' => $this->config->getTestMode($storeId) ? $this->config->getClientSecretTest($storeId) : $this->config->getClientSecret($storeId),
-                    'description' => $this->config->getDescription($storeId),
+                    'gateway_order_description' => $this->config->getGatewayOrderDescription($storeId),
                     'test_mode' => $this->config->getTestMode($storeId),
-                    'js_url_test' => $this->config->getJsUrlTest($storeId),
                     'confirm_link' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
                     'close_link' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/close')
                 ]

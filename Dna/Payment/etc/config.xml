@@ -18,12 +18,8 @@
                 <can_use_checkout>1</can_use_checkout>
                 <is_gateway>1</is_gateway>
                 <sort_order>1</sort_order>
-                <description>Order Payment</description>
+                <gateway_order_description>Order Payment</gateway_order_description>
                 <test_mode>0</test_mode>
-                <js_url_test><![CDATA[https://test-pay.dnapayments.com/test-payment-api.js]]></js_url_test>
-                <terminal_id_test>35baee61-93df-40d9-b32c-31b867ed1988</terminal_id_test>
-                <client_id_test>almacafe</client_id_test>
-                <client_secret_test>rF587AV9Ms94qN2QShFzVR3vFnWkhjbAK3sG</client_secret_test>
             </dna_payment>
         </payment>
     </default>

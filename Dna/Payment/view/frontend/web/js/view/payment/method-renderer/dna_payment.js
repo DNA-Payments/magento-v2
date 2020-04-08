@@ -11,7 +11,8 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'dna-place-order'
+        'dna-place-order',
+        'dna-payment-api'
     ],
     function (
         ko,
@@ -27,30 +28,19 @@ define(
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
             defaults: {
                 template: 'Dna_Payment/payment/form',
-                scriptLoaded: false,
                 orderId: null,
             },
             placeOrder: function (args) {
                 const self = this;
                 this.makeOrder(() => {
-                    if(self.scriptLoaded()) {
-                        self.makeAuth();
-                    } else {
-                        self.loadScript(() => {
-                            self.makeAuth();
-                        })
-                    }
+                    self.pay()
                 })
             },
             initObservable: function () {
-
                 this._super()
                     .observe([
-                        'scriptLoaded',
                         'orderId'
                     ]);
-
-
                 this.grandTotalAmount = quote.totals()['base_grand_total'];
 
                 quote.totals.subscribe(function () {
@@ -64,6 +54,23 @@ define(
                 }, this);
 
                 return this;
+            },
+            pay() {
+                const self = this;
+                const { test_mode } = window.checkoutConfig.payment[this.getCode()];
+                if(test_mode) {
+                    window.activatePaymentTestMode();
+                }
+                console.log(self.createAuthRequestData())
+                window.authPaymentService(self.createAuthRequestData(), {
+                    useRedirect: true
+                }).then((result) => {
+                    if(result.error) {
+                        self.orderId(null);
+                        self.showError("i18n: 'DNA Payment: Authorization request failed'")
+                    }
+                    window.openPaymentPage(self.createPaymentObject(result.value))
+                });
             },
             makeOrder(cb) {
                 const self = this;
@@ -79,8 +86,7 @@ define(
                                 cb();
                             }
                         ).fail(function(data){
-                            self.orderId(null);
-                            self.showError('Could\'t find order')
+
                         }).always(
                             function () {
                                 self.isPlaceOrderActionAllowed(true);
@@ -90,52 +96,20 @@ define(
                     return true;
                 }
             },
-            makeAuth() {
-                const self = this;
-                const { dnaPayments } = window;
-                $.ajax({
-                    type: "POST",
-                    url: dnaPayments.Config().TokenAPIConfig.url,
-                    data: self.createAuthRequestData(),
-                    dataType: "json"
-                }).then((auth) => {
-                        dnaPayments.pay(this.createPaymentObject(auth))
-                    },
-                    function() {
-                        self.showError("i18n: 'Authorization request failed'")
-                    }
-                );
-            },
-            createAuthRequestData: function(options = {}) {
+            createAuthRequestData: function() {
                 const { terminal_id, client_id, client_secret } = window.checkoutConfig.payment[this.getCode()];
                 return {
-                    grant_type: "client_credentials",
-                    scope: "payment",
                     client_id: client_id,
                     client_secret: client_secret,
                     terminal: terminal_id,
-                    invoiceID: this.orderId(),
+                    invoiceId: this.orderId(),
                     amount: this.getAmount(),
-                    currency: this.getCurrency(),
-                    ...options
+                    currency: this.getCurrency()
                 };
             },
-            loadScript: function (cb) {
-                const self = this,
-                    state = self.scriptLoaded;
-
-                $('body').trigger('processStart');
-                require([
-                    ...self.getScriptUrl()
-                ], function () {
-                    state(true);
-                    $('body').trigger('processStop');
-                    cb();
-                });
-            },
             createPaymentObject: function(auth) {
-                const { terminal_id, description, confirm_link, close_link } = window.checkoutConfig.payment[this.getCode()];
-                const { accountCountry, accountCity, street1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
+                const { terminal_id, gateway_order_description, confirm_link, close_link } = window.checkoutConfig.payment[this.getCode()];
+                const { accountCountry, accountCity, accountStreet1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
                 return {
                     terminal: terminal_id,
                     invoiceId: this.orderId(),
@@ -145,12 +119,12 @@ define(
                     failureBackLink: window.checkoutConfig.checkoutUrl, //: TODO add error page
                     postLink: close_link,
                     failurePostLink: confirm_link,
-                    accountId: "uuid2", //: TODO add error page
+                    // accountId: "uuid2", //: TODO add error page
                     language: "eng",
-                    description: description,
+                    description: gateway_order_description,
                     accountCountry: accountCountry,
                     accountCity: accountCity,
-                    accountStreet1: street1,
+                    accountStreet1: accountStreet1,
                     accountEmail: this.getEmail(),
                     accountFirstName: accountFirstName,
                     accountLastName: accountLastName,
@@ -184,7 +158,7 @@ define(
                 return {
                     accountCountry: address.countryId,
                     accountCity: address.city,
-                    street1: address.street && Array.isArray(address.street) ? address.street.join(' ') : '',
+                    accountStreet1: address.street && Array.isArray(address.street) ? address.street.join(' ') : '',
                     accountEmail: this.getEmail(),
                     accountFirstName: address.firstname,
                     accountLastName: address.lastname,
@@ -195,16 +169,8 @@ define(
                 if(quote.guestEmail) return quote.guestEmail;
                 else return window.checkoutConfig.customerData.email;
             },
-            getScriptUrl() {
-                const payment = window.checkoutConfig.payment[this.getCode()];
-                return [
-                    payment.test_mode
-                        ? payment.js_url_test
-                        : 'https://pay.dnapayments.com/payment-api.js'
-                ];
-            },
             validate() {
-                const { accountCountry, accountCity, accountStreet1, accountEmail, accountFirstName, accountLastName, accountPostalCode } = this.createPaymentObject();
+                const { accountCountry, accountCity, accountStreet1, accountFirstName, accountLastName, accountPostalCode, accountEmail } = this.getAddressInfo();
                 let isError = false;
 
                 if(!accountCountry || accountCountry.length > 2) {

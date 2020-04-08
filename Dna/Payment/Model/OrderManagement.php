@@ -113,7 +113,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             $this->savePaymentInformation($cartId, $email, $paymentMethod, $billingAddress);
             try {
                 $orderId = $this->cartManagement->placeOrder($cartId);
-                $this->setOrderStatus($orderId, Order::STATE_PENDING_PAYMENT);
+                $this->setOrderStatus($orderId, Order::STATE_CLOSED);
             } catch (\Magento\Framework\Exception\LocalizedException $e) {
                 throw new CouldNotSaveException(
                     __($e->getMessage()),

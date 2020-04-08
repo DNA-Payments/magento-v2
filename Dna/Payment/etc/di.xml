@@ -102,15 +102,18 @@
     <type name="Magento\Config\Model\Config\TypePool">
         <arguments>
             <argument name="sensitive" xsi:type="array">
-                <item name="payment/braintree/terminal_id" xsi:type="string">1</item>
-                <item name="payment/braintree/client_id" xsi:type="string">1</item>
-                <item name="payment/braintree/client_secret" xsi:type="string">1</item>
-                <item name="payment/braintree/description" xsi:type="string">1</item>
+                <item name="payment/dna_payment/terminal_id" xsi:type="string">1</item>
+                <item name="payment/dna_payment/client_id" xsi:type="string">1</item>
+                <item name="payment/dna_payment/client_secret" xsi:type="string">1</item>
+                <item name="payment/dna_payment/gateway_order_description" xsi:type="string">1</item>
 
-                <item name="payment/braintree/js_url_test" xsi:type="string">1</item>
-                <item name="payment/braintree/terminal_id_test" xsi:type="string">1</item>
-                <item name="payment/braintree/client_id_test" xsi:type="string">1</item>
-                <item name="payment/braintree/client_secret_test" xsi:type="string">1</item>
+                <item name="payment/dna_payment/terminal_id_test" xsi:type="string">1</item>
+                <item name="payment/dna_payment/client_id_test" xsi:type="string">1</item>
+                <item name="payment/dna_payment/client_secret_test" xsi:type="string">1</item>
+
+                <item name="payment/dna_payment/order_status_pending" xsi:type="string">1</item>
+                <item name="payment/dna_payment/order_status_success" xsi:type="string">1</item>
+                <item name="payment/dna_payment/order_status_failure" xsi:type="string">1</item>
             </argument>
         </arguments>
     </type>
