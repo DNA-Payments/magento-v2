@@ -111,9 +111,7 @@
                 <item name="payment/dna_payment/client_id_test" xsi:type="string">1</item>
                 <item name="payment/dna_payment/client_secret_test" xsi:type="string">1</item>
 
-                <item name="payment/dna_payment/order_status_pending" xsi:type="string">1</item>
                 <item name="payment/dna_payment/order_status_success" xsi:type="string">1</item>
-                <item name="payment/dna_payment/order_status_failure" xsi:type="string">1</item>
             </argument>
         </arguments>
     </type>

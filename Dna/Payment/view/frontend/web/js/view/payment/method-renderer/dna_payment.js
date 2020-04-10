@@ -54,19 +54,19 @@ define(
             afterPlaceOrder: function () {
                 const self = this;
                 this.getOrder()
-                // self.pay()
             },
             getOrder(){
+                const self = this;
                 storage.post('rest/default/V1/dna-payment/start-and-get')
                     .done(function (response) {
-                        console.log(response, 'response')
+                        self.orderId(response)
+                        self.pay()
                     }).fail(function (response) {
-                        console.log(response, 'fail')
+                        throw 'Error: Fail loading order request';
                     });
             },
             pay() {
                 const self = this;
-                this.orderId(new Date().getTime().toString())
                 const { test_mode } = window.checkoutConfig.payment[this.getCode()];
                 if(test_mode) {
                     window.activatePaymentTestMode();
@@ -78,7 +78,8 @@ define(
                         self.orderId(null);
                         self.showError("i18n: 'DNA Payment: Authorization request failed'")
                     }
-                    window.openPaymentPage(self.createPaymentObject(result.value))
+                    console.log(self.createPaymentObject(result.value))
+                    // window.openPaymentPage(self.createPaymentObject(result.value))
                 });
             },
             createAuthRequestData: function() {
@@ -102,8 +103,8 @@ define(
                     currency: this.getCurrency(),
                     backLink: window.checkoutConfig.defaultSuccessPageUrl,
                     failureBackLink: window.checkoutConfig.checkoutUrl, //: TODO add error page
-                    postLink: close_link,
-                    failurePostLink: confirm_link,
+                    postLink: confirm_link,
+                    failurePostLink: close_link,
                     // accountId: "uuid2", //: TODO add error page
                     language: "eng",
                     description: gateway_order_description,
