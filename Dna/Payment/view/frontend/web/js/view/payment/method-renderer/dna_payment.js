@@ -50,6 +50,7 @@ define(
                     this.isPlaceOrderActionAllowed(address !== null);
                 }, this);
 
+
                 return this;
             },
             afterPlaceOrder: function () {
@@ -104,11 +105,11 @@ define(
                     invoiceId: this.orderId(),
                     amount: this.getAmount(),
                     currency: this.getCurrency(),
-                    backLink: back_link ? back_link : window.checkoutConfig.defaultSuccessPageUrl,
+                    backLink: back_link,
                     failureBackLink: failure_back_link,
                     postLink: confirm_link,
                     failurePostLink: close_link,
-                    // accountId: "uuid2", //: TODO add error page
+                    accountId: window.checkoutConfig.customerData ? window.checkoutConfig.customerData.id : '',
                     language: "eng",
                     description: gateway_order_description,
                     accountCountry: accountCountry,
