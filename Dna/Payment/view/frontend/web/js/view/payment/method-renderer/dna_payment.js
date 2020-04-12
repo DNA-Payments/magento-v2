@@ -12,7 +12,7 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'Magento_Checkout/js/model/url-builder',
+        'Magento_Checkout/js/model/full-screen-loader',
         'dna-payment-api'
     ],
     function (
@@ -21,7 +21,8 @@ define(
         storage,
         Component,
         globalMessageList,
-        quote
+        quote,
+        fullScreenLoader
     ) {
         'use strict';
 
@@ -52,18 +53,21 @@ define(
                 return this;
             },
             afterPlaceOrder: function () {
-                const self = this;
                 this.getOrder()
             },
             getOrder(){
                 const self = this;
+                fullScreenLoader.startLoader();
                 storage.post('rest/default/V1/dna-payment/start-and-get')
                     .done(function (response) {
                         self.orderId(response)
                         self.pay()
                     }).fail(function (response) {
+                        self.showError('Error: Fail loading order request')
                         throw 'Error: Fail loading order request';
-                    });
+                    }).always(function () {
+                        fullScreenLoader.stopLoader(true);
+                    })
             },
             pay() {
                 const self = this;
@@ -78,8 +82,7 @@ define(
                         self.orderId(null);
                         self.showError("i18n: 'DNA Payment: Authorization request failed'")
                     }
-                    console.log(self.createPaymentObject(result.value))
-                    // window.openPaymentPage(self.createPaymentObject(result.value))
+                    window.openPaymentPage(self.createPaymentObject(result.value))
                 });
             },
             createAuthRequestData: function() {
@@ -94,15 +97,15 @@ define(
                 };
             },
             createPaymentObject: function(auth) {
-                const { terminal_id, gateway_order_description, confirm_link, close_link } = window.checkoutConfig.payment[this.getCode()];
+                const { terminal_id, gateway_order_description, confirm_link, close_link, back_link, failure_back_link } = window.checkoutConfig.payment[this.getCode()];
                 const { accountCountry, accountCity, accountStreet1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
                 return {
                     terminal: terminal_id,
                     invoiceId: this.orderId(),
                     amount: this.getAmount(),
                     currency: this.getCurrency(),
-                    backLink: window.checkoutConfig.defaultSuccessPageUrl,
-                    failureBackLink: window.checkoutConfig.checkoutUrl, //: TODO add error page
+                    backLink: back_link ? back_link : window.checkoutConfig.defaultSuccessPageUrl,
+                    failureBackLink: failure_back_link,
                     postLink: confirm_link,
                     failurePostLink: close_link,
                     // accountId: "uuid2", //: TODO add error page

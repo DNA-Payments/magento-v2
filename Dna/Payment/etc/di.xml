@@ -14,7 +14,7 @@
         <arguments>
             <argument name="code" xsi:type="const">\Dna\Payment\Model\Ui\ConfigProvider::CODE</argument>
             <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
-            <argument name="infoBlockType" xsi:type="string">Dna\Payment\Block\DnaPaymentInfo</argument>
+            <argument name="infoBlockType" xsi:type="string">Dna\Payment\Block\Info</argument>
             <argument name="valueHandlerPool" xsi:type="object">DnaPaymentValueHandlerPool</argument>
             <argument name="commandPool" xsi:type="object">DnaPaymentCommandPool</argument>
         </arguments>
@@ -93,7 +93,7 @@
         </arguments>
     </virtualType>
 
-    <type name="Dna\Payment\Block\DnaPaymentInfo">
+    <type name="Dna\Payment\Block\Info">
         <arguments>
             <argument name="config" xsi:type="object">Dna\Payment\Gateway\Config\Config</argument>
         </arguments>

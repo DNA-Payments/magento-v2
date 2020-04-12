@@ -45,20 +45,20 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @return string
      */
     public function startAndGetOrder() {
-        $order = $this->getOrderInfo();
+        $order = $this->getOrderInfo($this->checkoutSession->getLastRealOrderId());
         $this->setOrderStatus($order->getId(), Order::STATE_PENDING_PAYMENT);
-        return $order->getId();
+        return $order->getIncrementId();
     }
 
     /**
      * @return \Magento\Sales\Model\Order
      * @throws Exception
      */
-    protected function getOrderInfo()
+    protected function getOrderInfo($incrementId)
     {
-        $order = $this->orderFactory->create()->loadByIncrementId($this->checkoutSession->getLastRealOrderId());
+        $order = $this->orderFactory->create()->loadByIncrementId($incrementId);
         if (empty($order->getId())) {
-            throw new Exception(__('Error on create preference Basic Checkout - Exception on getOrderInfo'));
+            throw new Exception(__('Error: Can not find order by increment id'));
         }
         return $order;
     }
@@ -99,11 +99,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
          $secure3D = null,
          $reference = null
     ) {
-        $order = $this->orderRepository->get($invoiceId);
+        $orderByIncrement = $this->getOrderInfo($invoiceId);
+        $order = $this->orderRepository->get($orderByIncrement->getId());
+        $orderPayment = $order->getPayment();
         if(Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
-            $this->setOrderStatus($invoiceId, $this->config->getOrderSuccessStatus());
-            $orderPayment = $order->getPayment();
-            $orderPayment->setAdditionalInformation( 'paymentResponse', [
+            $this->setOrderStatus($orderByIncrement->getId(), $this->config->getOrderSuccessStatus());
+            $orderPayment->setAdditionalInformation( "paymentResponse", [
                 'id' => $id,
                 'reference' => $reference,
                 'amount' => $amount,
@@ -112,7 +113,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ]);
             $orderPayment->save();
         }
-        return json_encode($orderPayment->getAdditionalInformation( "paymentResponse"));
+        return $invoiceId;
 
     }
 
@@ -139,10 +140,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
          $secure3D = null,
          $reference = null
     ) {
-        $order = $this->orderRepository->get($invoiceId);
+        $orderByIncrement = $this->getOrderInfo($invoiceId);
+        $order = $this->orderRepository->get($orderByIncrement->getId());
+        $orderPayment = $order->getPayment();
         if(Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
-            $this->setOrderStatus($invoiceId, $order::STATE_CLOSED);
-            $orderPayment = $order->getPayment();
+            $this->setOrderStatus($orderByIncrement->getId(), $order::STATE_CLOSED);
             $orderPayment->setAdditionalInformation( "paymentResponse", [
                 'id' => $id,
                 'reference' => $reference,
@@ -152,7 +154,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ]);
             $orderPayment->save();
         }
-        return $order;
+        return $invoiceId;
     }
 
 }

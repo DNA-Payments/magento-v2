@@ -62,6 +62,8 @@ final class ConfigProvider implements ConfigProviderInterface
                     'client_secret' => $this->config->getTestMode($storeId) ? $this->config->getClientSecretTest($storeId) : $this->config->getClientSecret($storeId),
                     'gateway_order_description' => $this->config->getGatewayOrderDescription($storeId),
                     'test_mode' => $this->config->getTestMode($storeId),
+                    'back_link' => $this->config->getBackLink($storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($storeId)) : '',
+                    'failure_back_link' => $this->config->getFailureBackLink($storeId) ? $this->urlBuilder->getUrl($this->config->getFailureBackLink($storeId)) : $this->urlBuilder->getUrl('dna/result/failure'),
                     'confirm_link' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
                     'close_link' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/close')
                 ]

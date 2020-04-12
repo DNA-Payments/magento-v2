@@ -18,6 +18,9 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     const KEY_CLIENT_ID_TEST = 'client_id_test';
     const KEY_CLIENT_SECRET_TEST = 'client_secret_test';
 
+    const KEY_BACK_LINK = 'back_link';
+    const KEY_FAILURE_BACK_LINK = 'failure_back_link';
+
 
     const KEY_ORDER_SUCCESS_STATUS = 'order_status_success';
 
@@ -50,6 +53,14 @@ class Config extends \Magento\Payment\Gateway\Config\Config
 
     public function getClientSecret($storeId = null) {
         return $this->getValue(Config::KEY_CLIENT_SECRET, $storeId);
+    }
+
+    public function getBackLink($storeId = null) {
+        return $this->getValue(Config::KEY_BACK_LINK, $storeId);
+    }
+
+    public function getFailureBackLink($storeId = null) {
+        return $this->getValue(Config::KEY_FAILURE_BACK_LINK, $storeId);
     }
 
     public function getGatewayOrderDescription($storeId = null) {

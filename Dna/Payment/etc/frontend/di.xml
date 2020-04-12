@@ -13,7 +13,7 @@
             </argument>
         </arguments>
     </type>
-    <type name="Dna\Payment\Block\DnaPaymentInfo">
+    <type name="Dna\Payment\Block\Info">
         <arguments>
             <argument name="data" xsi:type="array">
                 <item xsi:type="string" name="is_secure_mode">1</item>
