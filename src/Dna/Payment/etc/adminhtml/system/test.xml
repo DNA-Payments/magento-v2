@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <group id="dna_payment_test" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>Test mode account</label>
+        <field id="terminal_id_test" translate="label" type="text" sortOrder="110" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Test Terminal ID</label>
+            <config_path>payment/dna_payment/terminal_id_test</config_path>
+            <requires>
+                <field id="test_mode"/>
+            </requires>
+        </field>
+        <field id="client_id_test" translate="label" type="text" sortOrder="120" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Test Client ID</label>
+            <config_path>payment/dna_payment/client_id_test</config_path>
+            <requires>
+                <field id="test_mode"/>
+            </requires>
+        </field>
+        <field id="client_secret_test" translate="label" type="text" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Test Client Secret</label>
+            <config_path>payment/dna_payment/client_secret_test</config_path>
+            <requires>
+                <field id="test_mode"/>
+            </requires>
+        </field>
+    </group>
+</config>
