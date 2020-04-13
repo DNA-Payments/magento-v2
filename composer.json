@@ -1,0 +1,27 @@
+{
+  "name": "dna/magento-2",
+  "description": "DNA payments gateway for magento 2",
+  "type": "magento2-module",
+  "require": {
+    "php": "~5.5.0|~5.6.0|~7.0.0",
+    "magento/module-sales": "*",
+    "magento/module-checkout": "*",
+    "magento/module-payment": "*",
+    "magento/framework": "*"
+  },
+  "require-dev": {
+    "magento/magento-composer-installer": "^0.1.13"
+  },
+  "license": [
+    "OSL-3.0",
+    "AFL-3.0"
+  ],
+  "autoload": {
+    "psr-4": {
+      "MercadoPago\\Core\\": "src/Dna/Payment"
+    },
+    "files": [
+      "src/Dna/Payment/registration.php"
+    ]
+  }
+}
