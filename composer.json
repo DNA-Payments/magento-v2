@@ -21,7 +21,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "MercadoPago\\Core\\": "src/Dna/Payment"
+      "Dna\\Payment\\": "src/Dna/Payment"
     },
     "files": [
       "src/Dna/Payment/registration.php"
