@@ -1,10 +1,10 @@
 {
   "name": "dna/magento-2",
   "description": "DNA payments gateway for magento 2",
-  "type": "magento2-module",
-  "minimum-stability": "1.0.0",
-  "prefer-stable": true,
   "version": "1.0.0",
+  "type": "magento2-module",
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "require": {
     "php": ">=5.5.0",
     "magento/module-sales": "*",
@@ -12,6 +12,12 @@
     "magento/module-payment": "*",
     "magento/framework": "*"
   },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/DNA-Payments/magento-v2.git"
+    }
+  ],
   "require-dev": {
     "magento/magento-composer-installer": "^0.1.13"
   },
@@ -26,5 +32,5 @@
     "files": [
       "src/Dna/Payment/registration.php"
     ]
-  }
+  },
 }
