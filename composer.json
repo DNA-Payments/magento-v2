@@ -3,6 +3,8 @@
   "description": "DNA payments gateway for magento 2",
   "version": "1.0.0",
   "type": "magento2-module",
+  "minimum-stability": "stable",
+  "prefer-stable": true,
   "require": {
     "php": ">=5.5.0",
     "magento/module-sales": "*",
