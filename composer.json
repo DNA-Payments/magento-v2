@@ -1,7 +1,6 @@
 {
   "name": "dna/magento-2",
   "description": "DNA payments gateway for magento 2",
-  "version": "v1.0.0",
   "type": "magento2-module",
   "minimum-stability": "dev",
   "prefer-stable": true,
