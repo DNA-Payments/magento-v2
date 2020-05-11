@@ -49,7 +49,7 @@ class AuthorizationRequest implements BuilderInterface
             'INVOICE' => $order->getOrderIncrementId(),
             'AMOUNT' => $order->getGrandTotalAmount(),
             'CURRENCY' => $order->getCurrencyCode(),
-            'EMAIL' => $address->getEmail(),
+            'EMAIL' => $address ? $address->getEmail() : null,
             'MERCHANT_KEY' => $this->config->getValue(
                 'merchant_gateway_key',
                 $order->getStoreId()
