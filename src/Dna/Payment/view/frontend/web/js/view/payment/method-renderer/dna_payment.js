@@ -73,18 +73,20 @@ define(
             pay() {
                 const self = this;
                 const { test_mode } = window.checkoutConfig.payment[this.getCode()];
-                if(test_mode) {
-                    window.activatePaymentTestMode();
-                }
-                window.authPaymentService(self.createAuthRequestData(), {
-                    useRedirect: true
-                }).then((result) => {
-                    if(result.error) {
-                        self.orderId(null);
-                        self.showError("i18n: 'DNA Payment: Authorization request failed'")
+                window.DNAPayments.configure({
+                    isTestMode: test_mode,
+                    scopes: {
+                        useRedirect: true
                     }
-                    window.openPaymentPage(self.createPaymentObject(result.value))
                 });
+                window.DNAPayments.auth(self.createAuthRequestData())
+                    .then((result) => {
+                        if(result.error) {
+                            self.orderId(null);
+                            self.showError("i18n: 'DNA Payment: Authorization request failed'")
+                        }
+                        window.DNAPayments.openPaymentPage(self.createPaymentObject(result.value))
+                    });
             },
             createAuthRequestData: function() {
                 const { terminal_id, client_id, client_secret } = window.checkoutConfig.payment[this.getCode()];
