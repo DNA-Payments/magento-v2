@@ -20,10 +20,10 @@
   ],
   "autoload": {
     "psr-4": {
-      "Dna\\Payment\\": "src/Dna/Payment"
+      "Dna\\Payment\\": "Dna/Payment"
     },
     "files": [
-      "src/Dna/Payment/registration.php"
+      "Dna/Payment/registration.php"
     ]
   }
 }
