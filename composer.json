@@ -25,5 +25,11 @@
     "files": [
       "Dna/Payment/registration.php"
     ]
+  },
+  "repositories": {
+    "magento": {
+      "type": "composer",
+      "url": "https://repo.magento.com"
+    }
   }
 }

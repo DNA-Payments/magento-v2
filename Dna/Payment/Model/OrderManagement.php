@@ -12,6 +12,7 @@ use Magento\Sales\Model\OrderFactory;
 use Magento\Checkout\Model\Session;
 use Magento\Sales\Model\Order;
 use Dna\Payment\Gateway\Config\Config;
+use Dna\Payment\Model\DNAPaymentApi;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -45,9 +46,18 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @return string
      */
     public function startAndGetOrder() {
+        $DNAPaymentApiInstance = new DNAPaymentApi();
         $order = $this->getOrderInfo($this->checkoutSession->getLastRealOrderId());
         $this->setOrderStatus($order->getId(), Order::STATE_PENDING_PAYMENT);
-        return $order->getIncrementId();
+
+        $DNAPaymentApiInstance->auth((object) array(
+            'invoiceId' => $order->getIncrementId(),
+            'currency' => $order->getOrderCurrencyCode(),
+            'amount' => $order->getBaseGrandTotal()
+        ));
+
+        return ;
+
     }
 
     /**
