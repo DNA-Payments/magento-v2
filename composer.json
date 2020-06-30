@@ -9,7 +9,8 @@
     "magento/module-sales": "*",
     "magento/module-checkout": "*",
     "magento/module-payment": "*",
-    "magento/framework": "*"
+    "magento/framework": "*",
+    "nullpunkt/lz-string-php": "dev-master"
   },
   "require-dev": {
     "magento/magento-composer-installer": "^0.1.13"

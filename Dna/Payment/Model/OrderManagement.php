@@ -7,12 +7,12 @@ declare(strict_types=1);
 
 namespace Dna\Payment\Model;
 
-use Magento\Sales\Api\OrderRepositoryInterface;
-use Magento\Sales\Model\OrderFactory;
-use Magento\Checkout\Model\Session;
-use Magento\Sales\Model\Order;
 use Dna\Payment\Gateway\Config\Config;
-use Dna\Payment\Model\DNAPaymentApi;
+use Magento\Checkout\Model\Session;
+use Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Sales\Model\Order;
+use Magento\Sales\Model\OrderFactory;
+use Magento\Setup\Exception;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,23 +41,39 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->logger = $logger;
         $this->config = $config;
     }
+
     /**
      *
      * @return string
+     * @throws Exception
      */
-    public function startAndGetOrder() {
+    public function startAndGetOrder()
+    {
         $DNAPaymentApiInstance = new DNAPaymentApi();
         $order = $this->getOrderInfo($this->checkoutSession->getLastRealOrderId());
         $this->setOrderStatus($order->getId(), Order::STATE_PENDING_PAYMENT);
 
-        $DNAPaymentApiInstance->auth((object) array(
+        $address = $order->getBillingAddress();
+
+        $DNAPaymentApiInstance->auth((object) [
             'invoiceId' => $order->getIncrementId(),
             'currency' => $order->getOrderCurrencyCode(),
             'amount' => $order->getBaseGrandTotal()
-        ));
+        ]);
 
-        return ;
-
+        return $DNAPaymentApiInstance->generateUrl((object) [
+                'invoiceId' => $order->getIncrementId(),
+                'currency' => $order->getOrderCurrencyCode(),
+                'amount' => $order->getBaseGrandTotal(),
+                'accountId' => $this->checkoutSession->getCustomer() ? $this->checkoutSession->getCustomer()->getId() : '',
+                'accountCountry' => $address->getCountryId(),
+                'accountCity' => $address->getCity(),
+                'accountStreet1' => join(" ", $address->getStreet()),
+                'accountEmail' => $address->getEmail(),
+                'accountFirstName' => $address->getFirstname(),
+                'accountLastName' => $address->getLastname(),
+                'accountPostalCode' => $address->getPostcode()
+        ]);
     }
 
     /**
@@ -73,7 +89,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         return $order;
     }
 
-    public function setOrderStatus($orderId, $status){
+    public function setOrderStatus($orderId, $status)
+    {
         $order = $this->orderRepository->get($orderId);
         $order->setState($status);
         $order->setStatus($status);
@@ -85,7 +102,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         }
     }
 
-
     /**
      * @param string $invoiceId
      * @param string $id
@@ -97,24 +113,25 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $secure3D
      * @param string $reference
      * @return void
+     * @throws Exception
      */
     public function confirmOrder(
-         $invoiceId,
-         $id = null,
-         $amount = null,
-         $currency = null,
-         $accountId = null,
-         $message = null,
-         $code = null,
-         $secure3D = null,
-         $reference = null
+        $invoiceId,
+        $id = null,
+        $amount = null,
+        $currency = null,
+        $accountId = null,
+        $message = null,
+        $code = null,
+        $secure3D = null,
+        $reference = null
     ) {
         $orderByIncrement = $this->getOrderInfo($invoiceId);
         $order = $this->orderRepository->get($orderByIncrement->getId());
         $orderPayment = $order->getPayment();
-        if(Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
+        if (Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
             $this->setOrderStatus($orderByIncrement->getId(), $this->config->getOrderSuccessStatus());
-            $orderPayment->setAdditionalInformation( "paymentResponse", [
+            $orderPayment->setAdditionalInformation("paymentResponse", [
                 'id' => $id,
                 'reference' => $reference,
                 'amount' => $amount,
@@ -124,7 +141,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             $orderPayment->save();
         }
         return $invoiceId;
-
     }
 
     /**
@@ -138,24 +154,25 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $secure3D
      * @param string $reference
      * @return void
+     * @throws Exception
      */
     public function closeOrder(
-         $invoiceId,
-         $id = null,
-         $amount = null,
-         $currency = null,
-         $accountId = null,
-         $message = null,
-         $code = null,
-         $secure3D = null,
-         $reference = null
+        $invoiceId,
+        $id = null,
+        $amount = null,
+        $currency = null,
+        $accountId = null,
+        $message = null,
+        $code = null,
+        $secure3D = null,
+        $reference = null
     ) {
         $orderByIncrement = $this->getOrderInfo($invoiceId);
         $order = $this->orderRepository->get($orderByIncrement->getId());
         $orderPayment = $order->getPayment();
-        if(Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
+        if (Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
             $this->setOrderStatus($orderByIncrement->getId(), $order::STATE_CLOSED);
-            $orderPayment->setAdditionalInformation( "paymentResponse", [
+            $orderPayment->setAdditionalInformation("paymentResponse", [
                 'id' => $id,
                 'reference' => $reference,
                 'amount' => $amount,
@@ -166,5 +183,4 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         }
         return $invoiceId;
     }
-
 }

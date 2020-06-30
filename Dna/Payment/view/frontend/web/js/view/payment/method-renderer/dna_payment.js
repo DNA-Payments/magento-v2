@@ -12,8 +12,7 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'Magento_Checkout/js/model/full-screen-loader',
-        'dna-payment-api'
+        'Magento_Checkout/js/model/full-screen-loader'
     ],
     function (
         ko,
@@ -30,28 +29,10 @@ define(
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
             redirectAfterPlaceOrder: false,
             defaults: {
-                template: 'Dna_Payment/payment/form',
-                orderId: null,
+                template: 'Dna_Payment/payment/form'
             },
-            initObservable: function () {
-                this._super()
-                    .observe([
-                        'orderId'
-                    ]);
-                this.grandTotalAmount = quote.totals()['base_grand_total'];
-
-                quote.totals.subscribe(function () {
-                    if (self.grandTotalAmount !== quote.totals()['base_grand_total']) {
-                        self.grandTotalAmount = quote.totals()['base_grand_total'];
-                    }
-                });
-
-                quote.billingAddress.subscribe(function (address) {
-                    this.isPlaceOrderActionAllowed(address !== null);
-                }, this);
-
-
-                return this;
+            initialize: function() {
+                this.showError('Error: Fail loading order request');
             },
             afterPlaceOrder: function () {
                 this.getOrder()
@@ -61,68 +42,12 @@ define(
                 fullScreenLoader.startLoader();
                 storage.post('rest/default/V1/dna-payment/start-and-get')
                     .done(function (response) {
-                        self.orderId(response)
-                        self.pay()
+                        window.location.href = response
                     }).fail(function (response) {
-                        self.showError('Error: Fail loading order request')
-                        throw 'Error: Fail loading order request';
+                        self.showError('Error: Fail loading order request');
                     }).always(function () {
                         fullScreenLoader.stopLoader(true);
                     })
-            },
-            pay() {
-                const self = this;
-                const { test_mode } = window.checkoutConfig.payment[this.getCode()];
-                window.DNAPayments.configure({
-                    isTestMode: test_mode,
-                    scopes: {
-                        useRedirect: true
-                    }
-                });
-                window.DNAPayments.auth(self.createAuthRequestData())
-                    .then((result) => {
-                        if(result.error) {
-                            self.orderId(null);
-                            self.showError("i18n: 'DNA Payment: Authorization request failed'")
-                        }
-                        window.DNAPayments.openPaymentPage(self.createPaymentObject(result.value))
-                    });
-            },
-            createAuthRequestData: function() {
-                const { terminal_id, client_id, client_secret } = window.checkoutConfig.payment[this.getCode()];
-                return {
-                    client_id: client_id,
-                    client_secret: client_secret,
-                    terminal: terminal_id,
-                    invoiceId: this.orderId(),
-                    amount: this.getAmount(),
-                    currency: this.getCurrency()
-                };
-            },
-            createPaymentObject: function(auth) {
-                const { terminal_id, gateway_order_description, confirm_link, close_link, back_link, failure_back_link } = window.checkoutConfig.payment[this.getCode()];
-                const { accountCountry, accountCity, accountStreet1, accountFirstName, accountLastName, accountPostalCode } = this.getAddressInfo();
-                return {
-                    terminal: terminal_id,
-                    invoiceId: this.orderId(),
-                    amount: this.getAmount(),
-                    currency: this.getCurrency(),
-                    backLink: back_link,
-                    failureBackLink: failure_back_link,
-                    postLink: confirm_link,
-                    failurePostLink: close_link,
-                    accountId: window.checkoutConfig.customerData ? window.checkoutConfig.customerData.id : '',
-                    language: "eng",
-                    description: gateway_order_description,
-                    accountCountry: accountCountry,
-                    accountCity: accountCity,
-                    accountStreet1: accountStreet1,
-                    accountEmail: this.getEmail(),
-                    accountFirstName: accountFirstName,
-                    accountLastName: accountLastName,
-                    accountPostalCode: accountPostalCode,
-                    auth: auth
-                };
             },
             getCode: function() {
                 return 'dna_payment';
@@ -132,13 +57,6 @@ define(
                     'method': this.item.method,
                     'additional_data': null
                 };
-            },
-            getCurrency: function() {
-                const totals = quote.totals();
-                return totals['base_currency_code'];
-            },
-            getAmount: function() {
-                return this.grandTotalAmount;
             },
             getAddressInfo: function() {
                 const address = quote.billingAddress() ? quote.billingAddress() : quote.shippingAddress();
