@@ -2,7 +2,8 @@
 namespace Dna\Payment\Model;
 
 use Magento\Setup\Exception;
-use Dna\Payment\Model\LZString;
+use Dna\Payment\Model\LZCompressor\LZString;
+
 
 class DNAPaymentApi
 {

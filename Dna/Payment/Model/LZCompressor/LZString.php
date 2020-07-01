@@ -1,5 +1,5 @@
 <?php
-namespace Dna\Payment\Model;
+namespace Dna\Payment\Model\LZCompressor;
 
 class LZString
 {
@@ -76,8 +76,8 @@ class LZString
 
     public static function compressToUTF16($input) {
         return self::_compress($input, 15, function($a) {
-                return LZUtil16::fromCharCode($a+32);
-            }) . LZUtil16::utf16_chr(32);
+            return LZUtil16::fromCharCode($a+32);
+        }) . LZUtil16::utf16_chr(32);
     }
 
     public static function decompressFromUTF16($input) {
@@ -145,7 +145,7 @@ class LZString
             $value = $value >> 1;
         }
 
-        while (true) {
+         while (true) {
             $context->data->val = $context->data->val << 1;
             if ($context->data->position == ($bitsPerChar-1)) {
                 $context->data->append($getCharFromInt($context->data->val));
