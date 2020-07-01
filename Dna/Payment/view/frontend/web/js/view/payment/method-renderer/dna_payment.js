@@ -31,9 +31,6 @@ define(
             defaults: {
                 template: 'Dna_Payment/payment/form'
             },
-            initialize: function() {
-                this.showError('Error: Fail loading order request');
-            },
             afterPlaceOrder: function () {
                 this.getOrder()
             },
@@ -44,7 +41,7 @@ define(
                     .done(function (response) {
                         window.location.href = response
                     }).fail(function (response) {
-                        self.showError('Error: Fail loading order request');
+                        self.showError('Error: Fail loading order request. Please check your credentials');
                     }).always(function () {
                         fullScreenLoader.stopLoader(true);
                     })

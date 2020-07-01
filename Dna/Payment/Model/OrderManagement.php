@@ -27,6 +27,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $checkoutSession;
     protected $logger;
     protected $config;
+    protected $dnaPaymentApiInstance;
 
     public function __construct(
         OrderRepositoryInterface $orderRepository,
@@ -40,6 +41,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->checkoutSession = $checkoutSession;
         $this->logger = $logger;
         $this->config = $config;
+        $this->dnaPaymentApiInstance = new DNAPaymentApi();
     }
 
     /**
@@ -49,19 +51,19 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      */
     public function startAndGetOrder()
     {
-        $DNAPaymentApiInstance = new DNAPaymentApi();
+
         $order = $this->getOrderInfo($this->checkoutSession->getLastRealOrderId());
         $this->setOrderStatus($order->getId(), Order::STATE_PENDING_PAYMENT);
 
         $address = $order->getBillingAddress();
 
-        $DNAPaymentApiInstance->auth((object) [
+        $this->dnaPaymentApiInstance->auth((object) [
             'invoiceId' => $order->getIncrementId(),
             'currency' => $order->getOrderCurrencyCode(),
             'amount' => $order->getBaseGrandTotal()
         ]);
 
-        return $DNAPaymentApiInstance->generateUrl((object) [
+        return $this->dnaPaymentApiInstance->generateUrl((object) [
                 'invoiceId' => $order->getIncrementId(),
                 'currency' => $order->getOrderCurrencyCode(),
                 'amount' => $order->getBaseGrandTotal(),
@@ -109,9 +111,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $currency
      * @param string $accountId
      * @param string $message
-     * @param string $code
      * @param string $secure3D
      * @param string $reference
+     * @param string $signature
+     * @param string $errorCode
+     * @param boolean $success
      * @return void
      * @throws Exception
      */
@@ -122,14 +126,24 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $currency = null,
         $accountId = null,
         $message = null,
-        $code = null,
         $secure3D = null,
-        $reference = null
+        $reference = null,
+        $signature = null,
+        $errorCode = null,
+        $success = null
     ) {
         $orderByIncrement = $this->getOrderInfo($invoiceId);
         $order = $this->orderRepository->get($orderByIncrement->getId());
         $orderPayment = $order->getPayment();
-        if (Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
+        if ($this->dnaPaymentApiInstance->isValidSignature((object)[
+            'id' => $id,
+            'amount' => $amount,
+            'currency' => $currency,
+            'invoiceId' => $invoiceId,
+            'errorCode' => $errorCode,
+            'success' => $success,
+            'signature' => $signature
+        ])) {
             $this->setOrderStatus($orderByIncrement->getId(), $this->config->getOrderSuccessStatus());
             $orderPayment->setAdditionalInformation("paymentResponse", [
                 'id' => $id,
@@ -150,9 +164,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $currency
      * @param string $accountId
      * @param string $message
-     * @param string $code
      * @param string $secure3D
      * @param string $reference
+     * @param string $signature
+     * @param string $errorCode
+     * @param boolean $success
      * @return void
      * @throws Exception
      */
@@ -163,14 +179,24 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $currency = null,
         $accountId = null,
         $message = null,
-        $code = null,
         $secure3D = null,
-        $reference = null
+        $reference = null,
+        $signature = null,
+        $errorCode = null,
+        $success = null
     ) {
         $orderByIncrement = $this->getOrderInfo($invoiceId);
         $order = $this->orderRepository->get($orderByIncrement->getId());
         $orderPayment = $order->getPayment();
-        if (Order::STATE_PENDING_PAYMENT === $order->getStatus()) {
+        if ($this->dnaPaymentApiInstance->isValidSignature((object)[
+            'id' => $id,
+            'amount' => $amount,
+            'currency' => $currency,
+            'invoiceId' => $invoiceId,
+            'errorCode' => $errorCode,
+            'success' => $success,
+            'signature' => $signature
+        ])) {
             $this->setOrderStatus($orderByIncrement->getId(), $order::STATE_CLOSED);
             $orderPayment->setAdditionalInformation("paymentResponse", [
                 'id' => $id,

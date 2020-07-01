@@ -104,8 +104,16 @@ class DNAPaymentApi
         ]);
     }
 
-    public function encodeToUrl($data)
+    private function encodeToUrl($data)
     {
         return base64_encode(\LZCompressor\LZString::compressToEncodedURIComponent(json_encode($data)));
+    }
+
+    public function isValidSignature($result)
+    {
+        $storeId = $this->session->getStoreId();
+        $string = $result->id . $result->amount . $result->currency . $result->invoiceId . $result->errorCode . $result->success;
+        $secret = $this->isTestMode ? $this->config->getClientSecretTest($storeId) : $this->config->getClientSecret($storeId);
+        return base64_encode(hash_hmac('sha256', $string, $secret)) == $result->signature;
     }
 }
