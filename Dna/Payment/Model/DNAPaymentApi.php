@@ -2,6 +2,7 @@
 namespace Dna\Payment\Model;
 
 use Magento\Setup\Exception;
+use Dna\Payment\Model\LZString;
 
 class DNAPaymentApi
 {
@@ -106,7 +107,7 @@ class DNAPaymentApi
 
     private function encodeToUrl($data)
     {
-        return base64_encode(\LZCompressor\LZString::compressToEncodedURIComponent(json_encode($data)));
+        return base64_encode(LZString::compressToEncodedURIComponent(json_encode($data)));
     }
 
     public function isValidSignature($result)
