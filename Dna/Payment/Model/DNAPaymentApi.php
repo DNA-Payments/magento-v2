@@ -114,7 +114,7 @@ class DNAPaymentApi
     public function isValidSignature($result)
     {
         $storeId = $this->session->getStoreId();
-        $string = $result->id . $result->amount . $result->currency . $result->invoiceId . $result->errorCode . $result->success;
+        $string = $result->id . $result->amount . $result->currency . $result->invoiceId . $result->errorCode . json_encode($result->success);
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($storeId) : $this->config->getClientSecret($storeId);
         return base64_encode(hash_hmac('sha256', $string, $secret)) == $result->signature;
     }
