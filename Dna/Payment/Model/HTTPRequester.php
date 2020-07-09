@@ -19,7 +19,7 @@ class HTTPRequester
         $api_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($api_result === false) {
-            throw new \Exception(curl_error(json_encode($ch)));
+            throw new \Exception(json_encode($ch));
         }
 
         $response = [
@@ -48,7 +48,7 @@ class HTTPRequester
         $api_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($api_result === false) {
-            throw new \Exception(curl_error(json_encode($ch)));
+            throw new \Exception(json_encode($ch));
         }
 
         $response = [
@@ -77,7 +77,7 @@ class HTTPRequester
         $api_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($api_result === false) {
-            throw new \Exception(curl_error(json_encode($ch)));
+            throw new \Exception(json_encode($ch));
         }
 
         $response = [
@@ -106,7 +106,7 @@ class HTTPRequester
         $api_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($api_result === false) {
-            throw new \Exception(curl_error(json_encode($ch)));
+            throw new \Exception(json_encode($ch));
         }
 
         $response = [
