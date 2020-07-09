@@ -2,6 +2,7 @@
 namespace Dna\Payment\Model;
 
 use Dna\Payment\Model\LZCompressor\LZString;
+use Dna\Payment\Model\HTTPRequester;
 use Magento\Setup\Exception;
 
 class DNAPaymentApi
@@ -68,6 +69,7 @@ class DNAPaymentApi
         ];
 
         $response = HTTPRequester::HTTPPost($this->getPath()->authUrl, [], $authData);
+        var_dump($response, true);
         if ($response != null && $response['status'] >= 200 && $response['status'] < 400) {
             $this->authToken = $response['response'];
             return $response['response'];
