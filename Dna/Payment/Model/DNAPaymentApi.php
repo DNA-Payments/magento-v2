@@ -69,7 +69,6 @@ class DNAPaymentApi
         ];
 
         $response = HTTPRequester::HTTPPost($this->getPath()->authUrl, [], $authData);
-        var_dump($response, true);
         if ($response != null && $response['status'] >= 200 && $response['status'] < 400) {
             $this->authToken = $response['response'];
             return $response['response'];
