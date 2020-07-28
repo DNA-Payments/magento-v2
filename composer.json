@@ -10,7 +10,7 @@
     "magento/module-checkout": "*",
     "magento/module-payment": "*",
     "magento/framework": "*",
-    "rmccue/requests": "^1.7"
+    "dna/dnapayments-sdk-php": "1.0.0"
   },
   "require-dev": {
     "magento/magento-composer-installer": "^0.1.13"
