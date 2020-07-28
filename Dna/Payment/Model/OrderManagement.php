@@ -9,11 +9,14 @@ namespace Dna\Payment\Model;
 
 use Dna\Payment\Gateway\Config\Config;
 use Magento\Checkout\Model\Session;
+use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderFactory;
 use Magento\Setup\Exception;
+use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
+use Magento\Framework\UrlInterface;
 
 /**
  * Guest payment information management model.
@@ -27,27 +30,47 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $checkoutSession;
     protected $logger;
     protected $config;
-    protected $dnaPaymentApiInstance;
+    protected $session;
+    protected $storeManager;
+    protected $urlBuilder;
+    protected $isTestMode;
+    protected $dnaPayment;
+    protected $storeId;
 
     public function __construct(
         OrderRepositoryInterface $orderRepository,
         OrderFactory $orderFactory,
         Session $checkoutSession,
         LoggerInterface $logger,
-        Config $config
+        Config $config,
+        SessionManagerInterface $session,
+        StoreManagerInterface $storeManager,
+        UrlInterface $urlBuilder
     ) {
         $this->orderRepository = $orderRepository;
         $this->orderFactory = $orderFactory;
         $this->checkoutSession = $checkoutSession;
         $this->logger = $logger;
         $this->config = $config;
-        $this->dnaPaymentApiInstance = new DNAPaymentApi();
+        $this->session = $session;
+        $this->storeManager = $storeManager;
+        $this->urlBuilder = $urlBuilder;
+        $this->storeId = $this->session->getStoreId();
+        $this->isTestMode = $this->config->getTestMode($this->storeId);
+        $this->dnaPayment = new \DNAPayments\DNAPayments(
+            [
+                'isTestMode' => $this->isTestMode,
+                'scopes' => [
+                    'allowHosted' => true
+                ]
+            ]
+        );
     }
 
     /**
      *
      * @return string
-     * @throws Exception
+     * @throws Error
      */
     public function startAndGetOrder()
     {
@@ -57,13 +80,23 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         $address = $order->getBillingAddress();
 
-        $this->dnaPaymentApiInstance->auth((object) [
+        $result = $this->dnaPayment->auth([
+            'client_id' => $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId),
+            'client_secret' => $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId),
+            'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
             'invoiceId' => $order->getIncrementId(),
             'currency' => $order->getOrderCurrencyCode(),
-            'amount' => $order->getBaseGrandTotal()
+            'amount' => $order->getBaseGrandTotal(),
+            'paymentFormURL' => $this->storeManager->getStore()->getBaseUrl()
         ]);
 
-        return $this->dnaPaymentApiInstance->generateUrl((object) [
+        return $this->dnaPayment->generateUrl([
+                'postLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
+                'failurePostLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/close'),
+                'backLink' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
+                'failureBackLink' => $this->config->getFailureBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getFailureBackLink($this->storeId)) : $this->urlBuilder->getUrl('dna/result/failure'),
+                'description' => $this->config->getGatewayOrderDescription($this->storeId),
+                'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
                 'invoiceId' => $order->getIncrementId(),
                 'currency' => $order->getOrderCurrencyCode(),
                 'amount' => $order->getBaseGrandTotal(),
@@ -75,18 +108,18 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 'accountFirstName' => $address->getFirstname(),
                 'accountLastName' => $address->getLastname(),
                 'accountPostalCode' => $address->getPostcode()
-        ]);
+        ], $result);
     }
 
     /**
      * @return \Magento\Sales\Model\Order
-     * @throws Exception
+     * @throws \Error
      */
     protected function getOrderInfo($incrementId)
     {
         $order = $this->orderFactory->create()->loadByIncrementId($incrementId);
         if (empty($order->getId())) {
-            throw new Exception(__('Error: Can not find order by increment id'));
+            throw new Error(__('Error: Can not find order by increment id'));
         }
         return $order;
     }
@@ -100,7 +133,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         try {
             $this->orderRepository->save($order);
         } catch (\Exception $e) {
-            throw new Exception(__('Error can not set status ' + $status));
+            throw new Error(__('Error can not set status ' + $status));
         }
     }
 
@@ -135,7 +168,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $orderByIncrement = $this->getOrderInfo($invoiceId);
         $order = $this->orderRepository->get($orderByIncrement->getId());
         $orderPayment = $order->getPayment();
-        if ($this->dnaPaymentApiInstance->isValidSignature((object)[
+        $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
+        if ($this->dnaPayment->isValidSignature([
             'id' => $id,
             'amount' => $amount,
             'currency' => $currency,
@@ -143,7 +177,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'errorCode' => $errorCode,
             'success' => $success,
             'signature' => $signature
-        ])) {
+        ], $secret)) {
             $this->setOrderStatus($orderByIncrement->getId(), $this->config->getOrderSuccessStatus());
             $orderPayment->setAdditionalInformation("paymentResponse", [
                 'id' => $id,
@@ -188,7 +222,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $orderByIncrement = $this->getOrderInfo($invoiceId);
         $order = $this->orderRepository->get($orderByIncrement->getId());
         $orderPayment = $order->getPayment();
-        if ($this->dnaPaymentApiInstance->isValidSignature((object)[
+        $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
+        if ($this->dnaPayment->isValidSignature([
             'id' => $id,
             'amount' => $amount,
             'currency' => $currency,
@@ -196,7 +231,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'errorCode' => $errorCode,
             'success' => $success,
             'signature' => $signature
-        ])) {
+        ], $secret)) {
             $this->setOrderStatus($orderByIncrement->getId(), $order::STATE_CLOSED);
             $orderPayment->setAdditionalInformation("paymentResponse", [
                 'id' => $id,
