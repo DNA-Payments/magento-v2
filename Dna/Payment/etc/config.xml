@@ -11,7 +11,7 @@
             <dna_payment>
                 <active>0</active>
                 <model>DnaPaymentGatewayFacade</model>
-                <title>Card Payment - Powered by DNA Payments</title>
+                <title>Visa / Mastercard / American Express / Diners Club / Other</title>
                 <gateway_order_description>Pay with your credit card via our payment gateway.</gateway_order_description>
                 <order_status>pending</order_status>
                 <order_status_success>pending</order_status_success>
