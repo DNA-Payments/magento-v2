@@ -32,7 +32,8 @@ define(
                 template: 'Dna_Payment/payment/form'
             },
             afterPlaceOrder: function () {
-                this.getOrder()
+                console.log('here getOrder')
+                // this.getOrder()
             },
             getOrder(){
                 const self = this;
@@ -50,6 +51,7 @@ define(
                 return 'dna_payment';
             },
             getData: function() {
+                console.log(this.item.method)
                 return {
                     'method': this.item.method,
                     'additional_data': null
