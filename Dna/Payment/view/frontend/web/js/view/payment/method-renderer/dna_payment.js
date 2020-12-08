@@ -44,7 +44,7 @@ define(
                         self.showError('Error: Fail loading order request. Please check your credentials');
                     }).always(function () {
                         fullScreenLoader.stopLoader(true);
-                    })
+                })
             },
             getCode: function() {
                 return 'dna_payment';

@@ -12,8 +12,8 @@
             <resource ref="anonymous" />
         </resources>
     </route>
-    <route url="/V1/dna-payment/close" method="POST">
-        <service class="Dna\Payment\Api\OrderManagementInterface" method="closeOrder"/>
+    <route url="/V1/dna-payment/failure" method="POST">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="failureOrder"/>
         <resources>
             <resource ref="anonymous" />
         </resources>

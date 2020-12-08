@@ -10,13 +10,12 @@ namespace Dna\Payment\Model;
 use Dna\Payment\Gateway\Config\Config;
 use Magento\Checkout\Model\Session;
 use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Framework\UrlInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
-use Magento\Sales\Model\Order;
 use Magento\Sales\Model\OrderFactory;
 use Magento\Setup\Exception;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
-use Magento\Framework\UrlInterface;
 
 /**
  * Guest payment information management model.
@@ -71,12 +70,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      *
      * @return string
      * @throws Error
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function startAndGetOrder()
     {
-
-        $order = $this->getOrderInfo($this->checkoutSession->getLastRealOrderId());
-        $this->setOrderStatus($order->getId(), Order::STATE_PENDING_PAYMENT);
+        $order = $this->checkoutSession->getLastRealOrder();
 
         $address = $order->getBillingAddress();
 
@@ -92,7 +90,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         return $this->dnaPayment->generateUrl([
                 'postLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
-                'failurePostLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/close'),
+                'failurePostLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/failure'),
                 'backLink' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
                 'failureBackLink' => $this->config->getFailureBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getFailureBackLink($this->storeId)) : $this->urlBuilder->getUrl('dna/result/failure'),
                 'description' => $this->config->getGatewayOrderDescription($this->storeId),
@@ -115,18 +113,18 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @return \Magento\Sales\Model\Order
      * @throws \Error
      */
-    protected function getOrderInfo($incrementId)
+    protected function getOrderInfo($orderId)
     {
-        $order = $this->orderFactory->create()->loadByIncrementId($incrementId);
+        $order = $this->orderFactory->create()->loadByIncrementId($orderId);
         if (empty($order->getId())) {
-            throw new Error(__('Error: Can not find order by increment id'));
+            throw new Error(__('Error: Can not find order'));
         }
         return $order;
     }
 
     public function setOrderStatus($orderId, $status)
     {
-        $order = $this->orderRepository->get($orderId);
+        $order = $this->orderFactory->create()->loadByIncrementId($orderId);
         $order->setState($status);
         $order->setStatus($status);
 
@@ -145,7 +143,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $accountId
      * @param string $message
      * @param string $secure3D
-     * @param string $reference
+     * @param string $rrn
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
@@ -160,13 +158,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $accountId = null,
         $message = null,
         $secure3D = null,
-        $reference = null,
+        $rrn = null,
         $signature = null,
         $errorCode = null,
         $success = null
     ) {
-        $orderByIncrement = $this->getOrderInfo($invoiceId);
-        $order = $this->orderRepository->get($orderByIncrement->getId());
+        $order = $this->getOrderInfo($invoiceId);
         $orderPayment = $order->getPayment();
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
         if ($this->dnaPayment->isValidSignature([
@@ -178,17 +175,48 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'success' => $success,
             'signature' => $signature
         ], $secret)) {
-            $this->setOrderStatus($orderByIncrement->getId(), $this->config->getOrderSuccessStatus());
-            $orderPayment->setAdditionalInformation("paymentResponse", [
-                'id' => $id,
-                'reference' => $reference,
-                'amount' => $amount,
-                'currency' => $currency,
-                'message' => $message
-            ]);
-            $orderPayment->save();
+            try {
+                $this->setOrderStatus($invoiceId, $this->config->getOrderSuccessStatus());
+                $orderPayment
+                    ->setTransactionId($id)
+                    ->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true)
+                    ->setAdditionalInformation("paymentResponse", [
+                        'id' => $id,
+                        'rrn' => $rrn,
+                        'message' => $message
+                    ])
+                    ->save();
+                $order
+                    ->addStatusHistoryComment("Your payment with DNA Payment is complete. Transaction #$id")
+                    ->setIsCustomerNotified(true)
+                    ->save();
+                $this->sendEmail($invoiceId);
+            } catch (\Magento\Checkout\Exception $e) {
+                $this->logger->error($e);
+            }
         }
         return $invoiceId;
+    }
+
+    /**
+     * Send email about new order.
+     * Process mail exception
+     *
+     * @param string $orderId
+     * @return bool
+     */
+    public function sendEmail($orderId)
+    {
+        try {
+            $order = $this->getOrderInfo($orderId);
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $emailSender = $objectManager->create('\Magento\Sales\Model\Order\Email\Sender\OrderSender');
+            $emailSender->send($order, true);
+        } catch (\Magento\Framework\Mail\Exception $exception) {
+            $this->logger->info($exception);
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -199,14 +227,14 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $accountId
      * @param string $message
      * @param string $secure3D
-     * @param string $reference
+     * @param string $rrn
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
      * @return void
      * @throws Exception
      */
-    public function closeOrder(
+    public function failureOrder(
         $invoiceId,
         $id = null,
         $amount = null,
@@ -214,13 +242,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $accountId = null,
         $message = null,
         $secure3D = null,
-        $reference = null,
+        $rrn = null,
         $signature = null,
         $errorCode = null,
         $success = null
     ) {
-        $orderByIncrement = $this->getOrderInfo($invoiceId);
-        $order = $this->orderRepository->get($orderByIncrement->getId());
+        $order = $this->getOrderInfo($invoiceId);
         $orderPayment = $order->getPayment();
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
         if ($this->dnaPayment->isValidSignature([
@@ -232,15 +259,18 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'success' => $success,
             'signature' => $signature
         ], $secret)) {
-            $this->setOrderStatus($orderByIncrement->getId(), $order::STATE_CLOSED);
-            $orderPayment->setAdditionalInformation("paymentResponse", [
-                'id' => $id,
-                'reference' => $reference,
-                'amount' => $amount,
-                'currency' => $currency,
-                'message' => $message
-            ]);
-            $orderPayment->save();
+            $order->addStatusHistoryComment("Your payment with DNA Payment is failed. Transaction #$id");
+            $orderPayment
+                ->setTransactionId($id)
+                ->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true)
+                ->setAdditionalInformation('paymentResponse', [
+                    'id' => $id,
+                    'rrn' => $rrn,
+                    'message' => $message
+                ])
+                ->save();
+            $this->setOrderStatus($invoiceId, $order::STATE_CLOSED);
+
         }
         return $invoiceId;
     }

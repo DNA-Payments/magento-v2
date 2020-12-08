@@ -13,10 +13,10 @@
                 <model>DnaPaymentGatewayFacade</model>
                 <title>Visa / Mastercard / American Express / Diners Club / Other</title>
                 <gateway_order_description>Pay with your credit card via our payment gateway.</gateway_order_description>
-                <order_status>pending</order_status>
-                <order_status_success>pending</order_status_success>
-                <payment_action>authorize</payment_action>
-                <can_authorize>1</can_authorize>
+                <order_status_success>processing</order_status_success>
+                <payment_action>initialize</payment_action> <!--Important: read Magento\Sales\Model\Order-->
+                <can_authorize>0</can_authorize>
+                <can_initialize>1</can_initialize> <!--Important: read Magento\Sales\Model\Order-->
                 <can_use_checkout>1</can_use_checkout>
                 <is_gateway>1</is_gateway>
                 <sort_order>1</sort_order>

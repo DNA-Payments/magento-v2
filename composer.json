@@ -1,4 +1,5 @@
 {
+  "version": "1.0.2",
   "name": "dna/magento-2",
   "description": "DNA payments gateway for magento 2",
   "type": "magento2-module",
@@ -10,7 +11,7 @@
     "magento/module-checkout": "*",
     "magento/module-payment": "*",
     "magento/framework": "*",
-    "dna/dnapayments-sdk-php": "1.0.0"
+    "dna/dnapayments-sdk-php": "1.0.1"
   },
   "require-dev": {
     "magento/magento-composer-installer": "^0.1.13"

@@ -20,40 +20,38 @@
         </arguments>
     </virtualType>
 
-<!--     Commands infrastructure-->
-        <virtualType name="DnaPaymentCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">
-            <arguments>
-                <argument name="commands" xsi:type="array">
-                    <item name="authorize" xsi:type="string">DnaPaymentAuthorizeCommand</item>
-                </argument>
-            </arguments>
-        </virtualType>
+    <!--     Commands infrastructure-->
+    <virtualType name="DnaPaymentCommandPool" type="Magento\Payment\Gateway\Command\CommandPool">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="initialize" xsi:type="string">DnaPaymentInitializeCommand</item>
+            </argument>
+        </arguments>
+    </virtualType>
 
-<!--     Authorize command-->
-        <virtualType name="DnaPaymentAuthorizeCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
-            <arguments>
-                <argument name="requestBuilder" xsi:type="object">DnaPaymentAuthorizationRequest</argument>
-                <argument name="handler" xsi:type="object">DnaPaymentResponseHandlerComposite</argument>
-                <argument name="transferFactory" xsi:type="object">Dna\Payment\Gateway\Http\TransferFactory</argument>
-                <argument name="client" xsi:type="object">Dna\Payment\Gateway\Http\Client\ClientMock</argument>
-            </arguments>
-        </virtualType>
+    <!-- Initialize command -->
+    <virtualType name="DnaPaymentInitializeCommand" type="Magento\Payment\Gateway\Command\GatewayCommand">
+        <arguments>
+            <argument name="requestBuilder" xsi:type="object">DnaPaymentInitializationRequest</argument>
+            <argument name="transferFactory" xsi:type="object">Dna\Payment\Gateway\Http\DummyTransferFactory</argument> <!-- [Payment/Model/Method/Adapter][executeCommand]ERROR!Cannot instantiate interface Magento\Payment\Gateway\Http\TransferFactoryInterface if empty -->
+            <argument name="client" xsi:type="object">Dna\Payment\Gateway\Http\Client\DummyClient</argument> <!-- [Payment/Model/Method/Adapter][executeCommand]ERROR getting command!Cannot instantiate interface Magento\Payment\Gateway\Http\ClientInterface if empty-->
+        </arguments>
+    </virtualType>
 
-<!--     Authorization Request-->
-        <virtualType name="DnaPaymentAuthorizationRequest" type="Magento\Payment\Gateway\Request\BuilderComposite">
-            <arguments>
-                <argument name="builders" xsi:type="array">
-                    <item name="transaction" xsi:type="string">Dna\Payment\Gateway\Request\AuthorizationRequest</item>
-                    <item name="mockData" xsi:type="string">Dna\Payment\Gateway\Request\MockDataRequest</item>
-                </argument>
-            </arguments>
-        </virtualType>
-        <type name="Dna\Payment\Gateway\Request\AuthorizationRequest">
-            <arguments>
-                <argument name="config" xsi:type="object">Dna\Payment\Gateway\Config\Config</argument>
-            </arguments>
-        </type>
+    <!-- Initialization Request -->
+    <virtualType name="DnaPaymentInitializationRequest" type="Magento\Payment\Gateway\Request\BuilderComposite">
+        <arguments>
+            <argument name="builders" xsi:type="array">
+                <item name="transaction" xsi:type="string">Dna\Payment\Gateway\Request\InitializationRequest</item>
+            </argument>
+        </arguments>
+    </virtualType>
 
+    <type name="Dna\Payment\Gateway\Request\InitializationRequest">
+        <arguments>
+            <argument name="config" xsi:type="object">Dna\Payment\Gateway\Config\Config</argument>
+        </arguments>
+    </type>
 
     <!-- Configuration reader -->
     <type name="Dna\Payment\Gateway\Config\Config">
@@ -61,23 +59,6 @@
             <argument name="methodCode" xsi:type="const">Dna\Payment\Model\Ui\ConfigProvider::CODE</argument>
         </arguments>
     </type>
-
-    <!-- Void Request -->
-    <type name="Dna\Payment\Gateway\Request\VoidRequest">
-        <arguments>
-            <argument name="config" xsi:type="object">Dna\Payment\Gateway\Config\Config</argument>
-        </arguments>
-    </type>
-
-    <!-- Response handlers -->
-    <virtualType name="DnaPaymentResponseHandlerComposite" type="Magento\Payment\Gateway\Response\HandlerChain">
-        <arguments>
-            <argument name="handlers" xsi:type="array">
-                <item name="txnid" xsi:type="string">Dna\Payment\Gateway\Response\TxnIdHandler</item>
-                <item name="fraud" xsi:type="string">Dna\Payment\Gateway\Response\FraudHandler</item>
-            </argument>
-        </arguments>
-    </virtualType>
 
     <!-- Value handlers infrastructure -->
     <virtualType name="DnaPaymentValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
@@ -113,6 +94,16 @@
 
                 <item name="payment/dna_payment/order_status_success" xsi:type="string">1</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="\Magento\Sales\Model\Order\Email\Sender\OrderSender">
+        <plugin name="DnaPayment-OrderSender-Plugin" type="Dna\Payment\Plugin\OrderSenderPlugin" />
+    </type>
+
+    <type name="Dna\Payment\Plugin\OrderSenderPlugin">
+        <arguments>
+            <argument name="config" xsi:type="object">Dna\Payment\Gateway\Config\Config</argument>
         </arguments>
     </type>
 

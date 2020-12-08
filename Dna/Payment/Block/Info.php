@@ -37,33 +37,27 @@ class Info extends \Magento\Payment\Block\Info
      */
     protected function _prepareSpecificInformation($transport = null)
     {
-      $transport = parent::_prepareSpecificInformation($transport);
-      $data = [];
+        $transport = parent::_prepareSpecificInformation($transport);
+        $data = [];
 
-      $info = $this->getInfo();
-      $paymentResponse = $info->getAdditionalInformation("paymentResponse");
+        $info = $this->getInfo();
+        $paymentResponse = $info->getAdditionalInformation("paymentResponse");
 
-    if(isset($paymentResponse['id'])){
-        $title = __('Payment id: ');
-        $data[$title->__toString()] = $paymentResponse['id'];
+        if (isset($paymentResponse['id'])) {
+            $title = __('Transaction id ');
+            $data[$title->__toString()] = $paymentResponse['id'];
+        }
+
+        if (isset($paymentResponse['rrn'])) {
+            $title = __('Reference ');
+            $data[$title->__toString()] = $paymentResponse['rrn'];
+        }
+
+        if (isset($paymentResponse['message'])) {
+            $title = __('Message ');
+            $data[$title->__toString()] = $paymentResponse['message'];
+        }
+
+        return $transport->setData(array_merge($data, $transport->getData()));
     }
-
-    if(isset($paymentResponse['reference'])){
-        $title = __('Reference: ');
-        $data[$title->__toString()] = $paymentResponse['reference'];
-    }
-
-    if(isset($paymentResponse['amount'])){
-        $title = __('Amount: ');
-        $data[$title->__toString()] = $paymentResponse['amount'];
-    }
-
-    if(isset($paymentResponse['message'])){
-        $title = __('Message: ');
-        $data[$title->__toString()] = $paymentResponse['message'];
-    }
-
-    return $transport->setData(array_merge($data, $transport->getData()));
-    }
-
 }

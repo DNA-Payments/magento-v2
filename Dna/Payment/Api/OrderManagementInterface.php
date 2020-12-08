@@ -18,7 +18,7 @@ interface OrderManagementInterface
      * @param string $accountId
      * @param string $message
      * @param string $secure3D
-     * @param string $reference
+     * @param string $rrn
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
@@ -32,7 +32,7 @@ interface OrderManagementInterface
         $accountId = null,
         $message = null,
         $secure3D = null,
-        $reference = null,
+        $rrn = null,
         $signature = null,
         $errorCode = null,
         $success = null
@@ -46,13 +46,13 @@ interface OrderManagementInterface
      * @param string $accountId
      * @param string $message
      * @param string $secure3D
-     * @param string $reference
+     * @param string $rrn
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
      * @return void
      */
-    public function closeOrder(
+    public function failureOrder(
         $invoiceId,
         $id = null,
         $amount = null,
@@ -60,7 +60,7 @@ interface OrderManagementInterface
         $accountId = null,
         $message = null,
         $secure3D = null,
-        $reference = null,
+        $rrn = null,
         $signature = null,
         $errorCode = null,
         $success = null
