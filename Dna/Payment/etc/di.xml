@@ -60,13 +60,6 @@
         </arguments>
     </type>
 
-    <!-- Void Request -->
-    <type name="Dna\Payment\Gateway\Request\VoidRequest">
-        <arguments>
-            <argument name="config" xsi:type="object">Dna\Payment\Gateway\Config\Config</argument>
-        </arguments>
-    </type>
-
     <!-- Value handlers infrastructure -->
     <virtualType name="DnaPaymentValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
         <arguments>

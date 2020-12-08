@@ -76,7 +76,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     {
 
         $order = $this->getOrderInfo($this->checkoutSession->getLastRealOrderId());
-//        $this->setOrderStatus($order->getId(), Order::STATE_PENDING_PAYMENT);
 
         $address = $order->getBillingAddress();
 

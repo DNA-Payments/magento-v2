@@ -14,9 +14,9 @@ use Psr\Log\LoggerInterface;
 
 class InitializationRequest implements BuilderInterface
 {
+    private $_gatewayConfig;
     private $_logger;
     private $_session;
-    private $_gatewayConfig;
 
     /**
      * @param Config $gatewayConfig

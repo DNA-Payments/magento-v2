@@ -32,8 +32,7 @@ define(
                 template: 'Dna_Payment/payment/form'
             },
             afterPlaceOrder: function () {
-                console.log('here getOrder')
-                // this.getOrder()
+                this.getOrder()
             },
             getOrder(){
                 const self = this;
@@ -45,13 +44,12 @@ define(
                         self.showError('Error: Fail loading order request. Please check your credentials');
                     }).always(function () {
                         fullScreenLoader.stopLoader(true);
-                    })
+                })
             },
             getCode: function() {
                 return 'dna_payment';
             },
             getData: function() {
-                console.log(this.item.method)
                 return {
                     'method': this.item.method,
                     'additional_data': null
