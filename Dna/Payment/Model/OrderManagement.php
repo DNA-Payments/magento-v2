@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Dna\Payment\Model;
 
 use Dna\Payment\Gateway\Config\Config;
+use DNAPayments\DNAPayments;
 use Magento\Checkout\Model\Session;
 use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\UrlInterface;
@@ -56,7 +57,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->urlBuilder = $urlBuilder;
         $this->storeId = $this->session->getStoreId();
         $this->isTestMode = $this->config->getTestMode($this->storeId);
-        $this->dnaPayment = new \DNAPayments\DNAPayments(
+        $this->dnaPayment = new DNAPayments(
             [
                 'isTestMode' => $this->isTestMode,
                 'scopes' => [
@@ -84,8 +85,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
             'invoiceId' => $order->getIncrementId(),
             'currency' => $order->getOrderCurrencyCode(),
-            'amount' => $order->getBaseGrandTotal(),
-            'paymentFormURL' => $this->storeManager->getStore()->getBaseUrl()
+            'amount' => $order->getBaseGrandTotal()
         ]);
 
         return $this->dnaPayment->generateUrl([
