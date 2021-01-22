@@ -61,7 +61,8 @@ class InitializationRequest implements BuilderInterface
 
         $order = $payment->getOrder();
 
-        if ($this->validateQuote($order)) {
+        // if ($this->validateQuote($order)) {
+        if (true) {
             $stateObject->setIsCustomerNotified(false);
             $stateObject->setState(Order::STATE_PENDING_PAYMENT);
             $stateObject->setStatus(Order::STATE_PENDING_PAYMENT);

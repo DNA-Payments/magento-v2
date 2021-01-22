@@ -174,7 +174,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'errorCode' => $errorCode,
             'success' => $success,
             'signature' => $signature
-        ], $secret)) {
+        ], $secret) && $success) {
             try {
                 $this->setOrderStatus($invoiceId, $this->config->getOrderSuccessStatus());
                 $orderPayment
