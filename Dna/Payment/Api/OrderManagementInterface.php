@@ -22,6 +22,10 @@ interface OrderManagementInterface
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
+     * @param string $paymentMethod
+     * @param string $paypalCaptureStatus
+     * @param string $paypalCaptureStatusReason
+     * @param string $paypalOrderStatus
      * @return void
      */
     public function confirmOrder(
@@ -35,7 +39,11 @@ interface OrderManagementInterface
         $rrn = null,
         $signature = null,
         $errorCode = null,
-        $success = null
+        $success = null,
+        $paymentMethod = null,
+        $paypalCaptureStatus = null,
+        $paypalCaptureStatusReason = null,
+        $paypalOrderStatus = null
     );
 
     /**
@@ -50,6 +58,9 @@ interface OrderManagementInterface
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
+     * @param string $paypalCaptureStatus
+     * @param string $paypalCaptureStatusReason
+     * @param string $paypalOrderStatus
      * @return void
      */
     public function failureOrder(
@@ -63,6 +74,9 @@ interface OrderManagementInterface
         $rrn = null,
         $signature = null,
         $errorCode = null,
-        $success = null
+        $success = null,
+        $paypalCaptureStatus = null,
+        $paypalCaptureStatusReason = null,
+        $paypalOrderStatus = null
     );
 }

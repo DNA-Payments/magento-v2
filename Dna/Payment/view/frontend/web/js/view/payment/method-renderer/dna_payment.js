@@ -24,7 +24,6 @@ define(
         fullScreenLoader
     ) {
         'use strict';
-
         return Component.extend({
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
             redirectAfterPlaceOrder: false,

@@ -41,21 +41,42 @@ class Info extends \Magento\Payment\Block\Info
         $data = [];
 
         $info = $this->getInfo();
-        $paymentResponse = $info->getAdditionalInformation("paymentResponse");
+        $additionalInfo = $info->getAdditionalInformation();
+        $paymentData = isset($additionalInfo['paymentResponse']) ? $additionalInfo['paymentResponse'] : $additionalInfo;
 
-        if (isset($paymentResponse['id'])) {
+        if (isset($paymentData['id'])) {
             $title = __('Transaction id ');
-            $data[$title->__toString()] = $paymentResponse['id'];
+            $data[$title->__toString()] = $paymentData['id'];
         }
 
-        if (isset($paymentResponse['rrn'])) {
+        if (isset($paymentData['rrn'])) {
             $title = __('Reference ');
-            $data[$title->__toString()] = $paymentResponse['rrn'];
+            $data[$title->__toString()] = $paymentData['rrn'];
         }
 
-        if (isset($paymentResponse['message'])) {
+        if (isset($paymentData['paymentMethod'])) {
+            $title = __('Payment method ');
+            $data[$title->__toString()] = $paymentData['paymentMethod'];
+        }
+
+        if (isset($paymentData['message'])) {
             $title = __('Message ');
-            $data[$title->__toString()] = $paymentResponse['message'];
+            $data[$title->__toString()] = $paymentData['message'];
+        }
+
+        if (isset($paymentData['paypalOrderStatus'])) {
+            $title = __('Paypal order status ');
+            $data[$title->__toString()] = $paymentData['paypalOrderStatus'];
+        }
+
+        if (isset($paymentData['paypalCaptureStatus'])) {
+            $title = __('Paypal capture status ');
+            $data[$title->__toString()] = $paymentData['paypalCaptureStatus'];
+        }
+
+        if (isset($paymentData['paypalCaptureStatusReason'])) {
+            $title = __('Paypal capture status reason ');
+            $data[$title->__toString()] = $paymentData['paypalCaptureStatusReason'];
         }
 
         return $transport->setData(array_merge($data, $transport->getData()));
