@@ -349,8 +349,10 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                         'paypalOrderStatus' => $paypalOrderStatus
                     ], true);
                 } else {
-                    $orderPayment->setTransactionId($id);
-                    $orderPayment->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true);
+                    $orderPayment
+                        ->setTransactionId($id)
+                        ->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true)
+                        ->save();
                     $orderPayment->setAdditionalInformation('id', $id);
                     $orderPayment->setAdditionalInformation('rrn', $rrn);
                     $orderPayment->setAdditionalInformation('message', $message);
@@ -443,8 +445,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             } else {
                 $order->addStatusHistoryComment("Your payment with DNA Payment is failed. Transaction #$id");
 
-                $orderPayment->setTransactionId($id);
-                $orderPayment->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true);
+                $orderPayment
+                    ->setTransactionId($id)
+                    ->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true)
+                    ->save();
+
                 $orderPayment->setAdditionalInformation('id', $id);
                 $orderPayment->setAdditionalInformation('rrn', $rrn);
                 $orderPayment->setAdditionalInformation('message', $message);
