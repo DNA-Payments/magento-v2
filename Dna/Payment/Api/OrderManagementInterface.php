@@ -22,6 +22,7 @@ interface OrderManagementInterface
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
+     * @param boolean $settled
      * @param string $paymentMethod
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
@@ -40,6 +41,7 @@ interface OrderManagementInterface
         $signature = null,
         $errorCode = null,
         $success = null,
+        $settled = null,
         $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
@@ -58,6 +60,7 @@ interface OrderManagementInterface
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
+     * @param boolean $settled
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
      * @param string $paypalOrderStatus
@@ -75,6 +78,7 @@ interface OrderManagementInterface
         $signature = null,
         $errorCode = null,
         $success = null,
+        $settled = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
         $paypalOrderStatus = null

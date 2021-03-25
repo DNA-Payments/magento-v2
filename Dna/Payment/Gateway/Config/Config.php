@@ -11,6 +11,7 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     const KEY_CLIENT_ID = 'client_id';
     const KEY_CLIENT_SECRET = 'client_secret';
     const KEY_GATEWAY_ORDER_DESCRIPTION = 'gateway_order_description';
+    const KEY_PAYMENT_ACTION = 'payment_action';
     const KEY_TEST_MODE = 'test_mode';
 
     const KEY_TERMINAL_ID_TEST = 'terminal_id_test';
@@ -70,6 +71,11 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     public function getGatewayOrderDescription($storeId = null)
     {
         return $this->getValue(Config::KEY_GATEWAY_ORDER_DESCRIPTION, $storeId);
+    }
+
+    public function getPaymentAction($storeId = null)
+    {
+        return $this->getValue(Config::KEY_PAYMENT_ACTION, $storeId);
     }
 
     public function getTestMode($storeId = null)

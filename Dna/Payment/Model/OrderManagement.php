@@ -8,12 +8,14 @@ declare(strict_types=1);
 namespace Dna\Payment\Model;
 
 use Dna\Payment\Gateway\Config\Config;
+use Dna\Payment\Model\Config as ModelConfig;
 use DNAPayments\DNAPayments;
 use Magento\Checkout\Model\Session;
 use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
+use Magento\Sales\Model\Order\Payment\Transaction;
 use Magento\Sales\Model\OrderFactory;
 use Magento\Setup\Exception;
 use Magento\Store\Model\StoreManagerInterface;
@@ -101,17 +103,16 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
     public function getAmountBreakDown(Order $order)
     {
-        $total = round((float)$order->getGrandTotal(), 2);
         $productTotal = round((float)$this->getProductTotalAmount($order), 2);
         $shippingTotal = round((float)$order->getShippingAmount(), 2);
         $taxTotal = round((float)$order->getTaxAmount(), 2);
-        $handlingTotal = round((float)($total - $productTotal - $shippingTotal - $taxTotal), 2);
 
         return [
             'itemTotal' => ['totalAmount' => $productTotal],
             'shipping' => ['totalAmount' => $shippingTotal],
-            'handling' => ['totalAmount' => $handlingTotal],
-            'taxTotal' => ['totalAmount' => $taxTotal]
+            'taxTotal' => ['totalAmount' => $taxTotal],
+            'discount' => ['totalAmount' => round((float)abs($order->getDiscountAmount()), 2)],
+            'shippingDiscount' => ['totalAmount' => round((float)abs($order->getShippingDiscountAmount()), 2)]
         ];
     }
 
@@ -132,6 +133,53 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         return $orderLines;
     }
 
+    public function getPaymentData($order)
+    {
+        $address = $order->getBillingAddress();
+        $paymentAction = $this->config->getPaymentAction($this->storeId);
+        $paymentData = [
+            'postLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
+            'failurePostLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/failure'),
+            'backLink' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
+            'failureBackLink' => $this->config->getFailureBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getFailureBackLink($this->storeId)) : $this->urlBuilder->getUrl('dna/result/failure'),
+            'description' => $this->config->getGatewayOrderDescription($this->storeId),
+            'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
+            'invoiceId' => $order->getIncrementId(),
+            'currency' => $order->getOrderCurrencyCode(),
+            'amount' => $order->getGrandTotal(),
+            'accountId' => $this->checkoutSession->getCustomer() ? $this->checkoutSession->getCustomer()->getId() : '',
+            'accountCountry' => $address->getCountryId(),
+            'accountCity' => $address->getCity(),
+            'accountStreet1' => join(" ", $address->getStreet()),
+            'accountEmail' => $address->getEmail(),
+            'accountFirstName' => $address->getFirstname(),
+            'accountLastName' => $address->getLastname(),
+            'accountPostalCode' => $address->getPostcode(),
+            'language' => 'eng',
+            'shippingAddress' => $this->getShippingAddress($order),
+            'amountBreakdown' => $this->getAmountBreakDown($order),
+            'orderLines' => $this->getOrderLines($order)
+        ];
+
+        if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
+            $paymentData['transactionType'] = ModelConfig::getTransactionType($paymentAction);
+        }
+
+        return $paymentData;
+    }
+
+    public function getAuthData($order)
+    {
+        return [
+            'client_id' => $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId),
+            'client_secret' => $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId),
+            'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
+            'invoiceId' => $order->getIncrementId(),
+            'currency' => $order->getOrderCurrencyCode(),
+            'amount' => $order->getGrandTotal()
+        ];
+    }
+
     /**
      *
      * @return string
@@ -141,54 +189,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     public function startAndGetOrder()
     {
         $order = $this->checkoutSession->getLastRealOrder();
-
-        $address = $order->getBillingAddress();
-
-        $result = $this->dnaPayment->auth([
-            'client_id' => $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId),
-            'client_secret' => $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId),
-            'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
-            'invoiceId' => $order->getIncrementId(),
-            'currency' => $order->getOrderCurrencyCode(),
-            'amount' => $order->getGrandTotal()
-        ]);
-
-        return $this->dnaPayment->generateUrl([
-                'postLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
-                'failurePostLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/failure'),
-                'backLink' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
-                'failureBackLink' => $this->config->getFailureBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getFailureBackLink($this->storeId)) : $this->urlBuilder->getUrl('dna/result/failure'),
-                'description' => $this->config->getGatewayOrderDescription($this->storeId),
-                'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
-                'invoiceId' => $order->getIncrementId(),
-                'currency' => $order->getOrderCurrencyCode(),
-                'amount' => $order->getGrandTotal(),
-                'accountId' => $this->checkoutSession->getCustomer() ? $this->checkoutSession->getCustomer()->getId() : '',
-                'accountCountry' => $address->getCountryId(),
-                'accountCity' => $address->getCity(),
-                'accountStreet1' => join(" ", $address->getStreet()),
-                'accountEmail' => $address->getEmail(),
-                'accountFirstName' => $address->getFirstname(),
-                'accountLastName' => $address->getLastname(),
-                'accountPostalCode' => $address->getPostcode(),
-                'language' => 'eng',
-                'shippingAddress' => $this->getShippingAddress($order),
-                'amountBreakdown' => $this->getAmountBreakDown($order),
-                'orderLines' => $this->getOrderLines($order)
-        ], $result);
-    }
-
-    /**
-     * @return \Magento\Sales\Model\Order
-     * @throws \Error
-     */
-    protected function getOrderInfo($orderId)
-    {
-        $order = $this->orderFactory->create()->loadByIncrementId($orderId);
-        if (empty($order->getId())) {
-            throw new Error(__('Error: Can not find order'));
-        }
-        return $order;
+        $result = $this->dnaPayment->auth($this->getAuthData($order));
+        return $this->dnaPayment->generateUrl($this->getPaymentData($order), $result);
     }
 
     public function setOrderStatus($orderId, $status)
@@ -212,6 +214,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     public static function isPendingPaymentOrder(\Magento\Sales\Model\Order $order)
     {
         return $order->getState() == $order::STATE_PENDING_PAYMENT;
+    }
+
+    public static function isClosedPaymentOrder(\Magento\Sales\Model\Order $order)
+    {
+        return $order->getState() == $order::STATE_CLOSED || $order->getState() == $order::STATE_CANCELED;
     }
 
     private function savePayPalOrderDetail(\Magento\Sales\Model\Order $order, $input, $isAddOrderNode)
@@ -277,7 +284,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     public function sendEmail($orderId)
     {
         try {
-            $order = $this->getOrderInfo($orderId);
+            $order = Helpers::getOrderInfo($orderId);
             $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
             $emailSender = $objectManager->create('\Magento\Sales\Model\Order\Email\Sender\OrderSender');
             $emailSender->send($order, true);
@@ -300,6 +307,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
+     * @param boolean $settled
      * @param string $paymentMethod
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
@@ -319,12 +327,13 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $signature = null,
         $errorCode = null,
         $success = null,
+        $settled = null,
         $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
         $paypalOrderStatus = null
     ) {
-        $order = $this->getOrderInfo($invoiceId);
+        $order = Helpers::getOrderInfo($invoiceId);
 
         if (!$this->isDNAPaymentOrder($order)) {
             return;
@@ -341,7 +350,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ], $secret) && $success) {
             try {
                 $orderPayment = $order->getPayment();
-                $isCompletedOrder = !$this->isPendingPaymentOrder($order);
+                $isCompletedOrder = !$this->isPendingPaymentOrder($order) && !$this->isClosedPaymentOrder($order);
                 if ($isCompletedOrder && !empty($paypalCaptureStatus)) {
                     $this->savePayPalOrderDetail($order, [
                         'paypalCaptureStatus' => $paypalCaptureStatus,
@@ -351,19 +360,31 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 } else {
                     $orderPayment
                         ->setTransactionId($id)
-                        ->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true)
+                        ->addTransaction($settled ? Transaction::TYPE_CAPTURE : Transaction::TYPE_AUTH, null, true)
+                        ->setIsTransactionClosed($settled)
                         ->save();
                     $orderPayment->setAdditionalInformation('id', $id);
                     $orderPayment->setAdditionalInformation('rrn', $rrn);
                     $orderPayment->setAdditionalInformation('message', $message);
                     $orderPayment->setAdditionalInformation('paymentMethod', $paymentMethod);
+                    $orderPayment->setAdditionalInformation(ModelConfig::ORDER_IS_FINISHED_PAYMENT_KEY, $settled ? 'yes' : 'no');
+                    if ($settled) {
+                        $orderPayment->setBaseAmountAuthorized($order->getBaseTotalDue());
+                        $orderPayment->setAmountAuthorized($order->getTotalDue());
+                    }
                     $orderPayment->save();
-
-
-                    $order
-                        ->addStatusHistoryComment("Your payment with DNA Payment is complete. Transaction #$id")
-                        ->setIsCustomerNotified(true)
-                        ->save();
+                    if ($settled) {
+                        \Dna\Payment\Model\Helpers::invoiceOrder($order, $id);
+                        $order
+                            ->addStatusHistoryComment("Your payment with DNA Payment is complete. Transaction #$id")
+                            ->setIsCustomerNotified(true)
+                            ->save();
+                    } else {
+                        $order
+                            ->addStatusHistoryComment("Your payment with DNA Payment is authorized. Transaction #$id")
+                            ->setIsCustomerNotified(true)
+                            ->save();
+                    }
 
                     if (!empty($paypalCaptureStatus)) {
                         $this->savePayPalOrderDetail($order, [
@@ -373,7 +394,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                         ], false);
                     }
 
-                    $this->setOrderStatus($invoiceId, $this->config->getOrderSuccessStatus());
+                    if ($settled) {
+                        $this->setOrderStatus($invoiceId, $this->config->getOrderSuccessStatus());
+                    } else {
+                        $this->setOrderStatus($invoiceId, Order::STATE_PAYMENT_REVIEW);
+                    }
                     $this->sendEmail($invoiceId);
                 }
             } catch (\Magento\Checkout\Exception $e) {
@@ -395,6 +420,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $signature
      * @param string $errorCode
      * @param boolean $success
+     * @param boolean $settled
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
      * @param string $paypalOrderStatus
@@ -413,11 +439,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $signature = null,
         $errorCode = null,
         $success = null,
+        $settled = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
         $paypalOrderStatus = null
     ) {
-        $order = $this->getOrderInfo($invoiceId);
+        $order = Helpers::getOrderInfo($invoiceId);
 
         if (!$this->isDNAPaymentOrder($order)) {
             return;
@@ -432,9 +459,10 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'invoiceId' => $invoiceId,
             'errorCode' => $errorCode,
             'success' => $success,
+            'settled' => $settled,
             'signature' => $signature
         ], $secret)) {
-            $isCompletedOrder = !$this->isPendingPaymentOrder($order);
+            $isCompletedOrder = !$this->isPendingPaymentOrder($order) && !$this->isClosedPaymentOrder($order);
 
             if ($isCompletedOrder && !empty($paypalCaptureStatus)) {
                 $this->savePayPalOrderDetail($order, [

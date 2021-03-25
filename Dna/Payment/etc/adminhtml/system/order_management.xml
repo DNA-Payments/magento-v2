@@ -8,5 +8,11 @@
             <source_model>Dna\Payment\Model\Status</source_model>
             <config_path>payment/dna_payment/order_status_success</config_path>
         </field>
+        <field id="payment_action" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1">
+            <label>Payment Action</label>
+            <config_path>payment/dna_payment/payment_action</config_path>
+            <source_model>Dna\Payment\Model\PaymentActions</source_model>
+            <attribute type="shared">1</attribute>
+        </field>
     </group>
 </config>
