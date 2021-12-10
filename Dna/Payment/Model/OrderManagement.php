@@ -85,6 +85,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'streetAddress2'  => !empty($streetLines) && array_key_exists(1, $streetLines) ? $streetLines[1] : '',
             'streetAddress3'  => !empty($streetLines) && array_key_exists(2, $streetLines) ? $streetLines[2] : '',
             'city'       => $address->getCity(),
+            'phone'      => $address->getTelephone(),
             'region'      => $address->getRegion(),
             'postalCode'   => $address->getPostcode(),
             'country'    => $address->getCountryId()
@@ -155,7 +156,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'accountFirstName' => $address->getFirstname(),
             'accountLastName' => $address->getLastname(),
             'accountPostalCode' => $address->getPostcode(),
-            'language' => 'eng',
+            'phone' => $address->getTelephone(),
+            'language' => 'en-gb',
             'shippingAddress' => $this->getShippingAddress($order),
             'amountBreakdown' => $this->getAmountBreakDown($order),
             'orderLines' => $this->getOrderLines($order)
@@ -190,7 +192,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     {
         $order = $this->checkoutSession->getLastRealOrder();
         $result = $this->dnaPayment->auth($this->getAuthData($order));
-        return $this->dnaPayment->generateUrl($this->getPaymentData($order), $result);
+        return [
+            'paymentData' => $this->getPaymentData($order),
+            'auth' => $result,
+            'isTestMode' => $this->isTestMode,
+            'integrationType' => $this->config->getIntegrationType($this->storeId)
+        ];
     }
 
     public function setOrderStatus($orderId, $status)

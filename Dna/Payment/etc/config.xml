@@ -15,6 +15,7 @@
                 <payment_action>authorize_capture</payment_action>
                 <gateway_order_description>Pay with your credit card via our payment gateway.</gateway_order_description>
                 <order_status_success>processing</order_status_success>
+                <integration_type>0</integration_type>
                 <can_authorize>0</can_authorize>
                 <can_refund>1</can_refund>
                 <can_refund_partial_per_invoice>1</can_refund_partial_per_invoice>

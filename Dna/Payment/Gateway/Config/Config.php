@@ -22,6 +22,7 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     const KEY_FAILURE_BACK_LINK = 'failure_back_link';
 
     const KEY_ORDER_SUCCESS_STATUS = 'order_status_success';
+    const KEY_INTEGRATION_TYPE = 'integration_type';
 
     /**
      * DNA config constructor
@@ -76,6 +77,11 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     public function getPaymentAction($storeId = null)
     {
         return $this->getValue(Config::KEY_PAYMENT_ACTION, $storeId);
+    }
+
+    public function getIntegrationType($storeId = null)
+    {
+        return $this->getValue(Config::KEY_INTEGRATION_TYPE, $storeId);
     }
 
     public function getTestMode($storeId = null)

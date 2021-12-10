@@ -14,5 +14,11 @@
             <source_model>Dna\Payment\Model\PaymentActions</source_model>
             <attribute type="shared">1</attribute>
         </field>
+        <field id="integration_type" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1">
+            <label>Payment form integration type</label>
+            <config_path>payment/dna_payment/integration_type</config_path>
+            <source_model>Dna\Payment\Model\PaymentIntegrationTypes</source_model>
+            <attribute type="shared">1</attribute>
+        </field>
     </group>
 </config>

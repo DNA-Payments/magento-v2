@@ -28,6 +28,14 @@ class Config extends AbstractConfig
         ];
     }
 
+    public static function getPaymentIntegrationTypes()
+    {
+        return [
+            '0' => __('Full Redirect'),
+            '1' => __('iFrame LightBox')
+        ];
+    }
+
     public static function getTransactionType($paymentAction)
     {
         switch ($paymentAction) {

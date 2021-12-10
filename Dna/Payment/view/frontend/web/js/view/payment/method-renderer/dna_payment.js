@@ -8,6 +8,7 @@ define(
     [
         'ko',
         'jquery',
+        'dnapayments-api',
         'mage/storage',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
@@ -37,8 +38,17 @@ define(
                 const self = this;
                 fullScreenLoader.startLoader();
                 storage.post('rest/default/V1/dna-payment/start-and-get')
-                    .done(function (response) {
-                        window.location.href = response
+                    .done(function (res) {
+                        res.paymentData.auth = res.auth;
+                        window.DNAPayments.configure({
+                            isTestMode: res.isTestMode
+                        });
+                    
+                        if (res.integrationType === '1') {
+                            window.DNAPayments.openPaymentIframeWidget(res.paymentData);
+                        } else {
+                            window.DNAPayments.openPaymentPage(res.paymentData);
+                        }
                     }).fail(function (response) {
                         self.showError('Error: Fail loading order request. Please check your credentials');
                     }).always(function () {
