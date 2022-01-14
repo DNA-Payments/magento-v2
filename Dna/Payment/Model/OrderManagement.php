@@ -64,7 +64,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             [
                 'isTestMode' => $this->isTestMode,
                 'scopes' => [
-                    'allowHosted' => true
+                    'allowHosted' => true,
+                    'allowEmbedded' => $this->config->getIntegrationType($this->storeId) == '1'
                 ]
             ]
         );

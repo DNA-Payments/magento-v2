@@ -18,6 +18,7 @@ define(
     function (
         ko,
         $,
+        DnapaymentsApi,
         storage,
         Component,
         globalMessageList,
@@ -39,15 +40,24 @@ define(
                 fullScreenLoader.startLoader();
                 storage.post('rest/default/V1/dna-payment/start-and-get')
                     .done(function (res) {
-                        res.paymentData.auth = res.auth;
+                            
+                        const { paymentData, auth, isTestMode, integrationType } = (function() {
+                            if (Array.isArray(res)) {
+                                const [p, a, t, i] = res
+                                return { paymentData: p, auth: a, isTestMode: t, integrationType: i }
+                            }
+                            return res || {}
+                        })()
+
+                        paymentData.auth = auth;
                         window.DNAPayments.configure({
-                            isTestMode: res.isTestMode
+                            isTestMode
                         });
                     
-                        if (res.integrationType === '1') {
-                            window.DNAPayments.openPaymentIframeWidget(res.paymentData);
+                        if (integrationType === '1') {
+                            window.DNAPayments.openPaymentIframeWidget(paymentData);
                         } else {
-                            window.DNAPayments.openPaymentPage(res.paymentData);
+                            window.DNAPayments.openPaymentPage(paymentData);
                         }
                     }).fail(function (response) {
                         self.showError('Error: Fail loading order request. Please check your credentials');
