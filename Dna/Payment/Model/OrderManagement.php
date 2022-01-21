@@ -123,11 +123,14 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $orderLines = [];
 
         foreach ($order->getAllVisibleItems() as $item_id => $item) {
+            $product = $item->getProduct();
             $orderLines[] = [
                 'reference' => strval($item->getProductId()),
                 'name' => $item->getName(),
                 'quantity' => (int)$item->getQtyOrdered(),
                 'unitPrice' => round((float)$item->getPrice(), 2),
+                'imageUrl' => $product->getMediaConfig()->getMediaUrl($product->getImage()),
+                'productUrl' => $product->getProductUrl(),
                 'totalAmount' => round((float)$item->getRowTotal(), 2)
             ];
         }
