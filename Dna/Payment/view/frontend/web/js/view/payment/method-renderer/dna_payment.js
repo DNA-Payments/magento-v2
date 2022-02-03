@@ -51,7 +51,17 @@ define(
 
                         paymentData.auth = auth;
                         window.DNAPayments.configure({
-                            isTestMode
+                            isTestMode,
+                            events: {
+                                cancelled: () =>  {
+                                    fullScreenLoader.startLoader();
+                                    window.location.href = paymentData.failureBackLink + '?cancel=1'
+                                },
+                                declined: () => {
+                                    fullScreenLoader.startLoader();
+                                    window.location.href = paymentData.failureBackLink
+                                }
+                            }
                         });
                     
                         if (integrationType === '1') {

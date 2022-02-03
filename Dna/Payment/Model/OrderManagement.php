@@ -146,7 +146,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'postLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
             'failurePostLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/failure'),
             'backLink' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
-            'failureBackLink' => $this->config->getFailureBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getFailureBackLink($this->storeId)) : $this->urlBuilder->getUrl('dna/result/failure'),
+            'failureBackLink' => $this->urlBuilder->getUrl('dna/result/failure'),
             'description' => $this->config->getGatewayOrderDescription($this->storeId),
             'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
             'invoiceId' => $order->getIncrementId(),
@@ -502,7 +502,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     ], false);
                 }
 
-                $this->setOrderStatus($invoiceId, $order::STATE_CLOSED);
+                $this->setOrderStatus($invoiceId, $order::STATE_CANCELED);
             }
         }
         return $invoiceId;
