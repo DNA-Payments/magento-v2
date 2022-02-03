@@ -78,12 +78,15 @@ class Failure extends Action implements ViewInterface
             $_checkoutSession->replaceQuote($quote);
 
             if (empty($this->getRequest()->getParam('cancel'))) {
-                $this->messageManager->addErrorMessage(__('An error occurred in the process of payment'));
+                $this->messageManager->addErrorMessage(__('Sorry, we were unable to process your payment. Please try again.'));
             }
 
             $resultRedirect = $this->resultRedirectFactory->create();
             $resultRedirect->setPath('checkout/cart');
             return $resultRedirect;
         }
+
+        $this->_view->loadLayout(['default', 'dna_failure']);
+        $this->_view->renderLayout();
     }
 }

@@ -14,7 +14,7 @@ class Failure extends Template
      */
     public function getErrorMessage()
     {
-        return 'We could not process your payment at this moment. Please, retry later';
+        return 'Sorry, we were unable to process your payment. Please try again.';
     }
 
     /**
