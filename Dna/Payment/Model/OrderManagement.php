@@ -71,26 +71,21 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         );
     }
 
-    public function getShippingAddress(Order $order)
-    {
-        $address = $order->getShippingAddress();
+    public function getAddress($address) {
         if ($address === null) {
             return null;
         }
-
         $streetLines = $address->getStreet();
-        return [
+        return array(
             'firstName' => $address->getFirstname(),
-            'lastName'  => $address->getLastname(),
-            'streetAddress1'  => !empty($streetLines) && array_key_exists(0, $streetLines) ? $streetLines[0] : '',
-            'streetAddress2'  => !empty($streetLines) && array_key_exists(1, $streetLines) ? $streetLines[1] : '',
-            'streetAddress3'  => !empty($streetLines) && array_key_exists(2, $streetLines) ? $streetLines[2] : '',
-            'city'       => $address->getCity(),
-            'phone'      => $address->getTelephone(),
-            'region'      => $address->getRegion(),
-            'postalCode'   => $address->getPostcode(),
-            'country'    => $address->getCountryId()
-        ];
+            'lastName' => $address->getLastname(),
+            'addressLine1' => join(" ", $address->getStreet()),
+            'postalCode' => $address->getPostcode(),
+            'city' => $address->getCity(),
+            'region' => $address->getRegion(),
+            'phone' => $address->getTelephone(),
+            'country' => $address->getCountryId()
+        );
     }
 
     public function getProductTotalAmount(Order $order)
@@ -140,31 +135,34 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
     public function getPaymentData($order)
     {
-        $address = $order->getBillingAddress();
+        $billingAddress = $order->getBillingAddress();
         $paymentAction = $this->config->getPaymentAction($this->storeId);
+
         $paymentData = [
-            'postLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
-            'failurePostLink' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/failure'),
-            'backLink' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
-            'failureBackLink' => $this->urlBuilder->getUrl('dna/result/failure'),
-            'description' => $this->config->getGatewayOrderDescription($this->storeId),
-            'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
             'invoiceId' => $order->getIncrementId(),
+            'description' => $this->config->getGatewayOrderDescription($this->storeId),
+            'amount' => floatval($order->getGrandTotal()),
             'currency' => $order->getOrderCurrencyCode(),
-            'amount' => $order->getGrandTotal(),
-            'accountId' => $this->checkoutSession->getCustomer() ? $this->checkoutSession->getCustomer()->getId() : '',
-            'accountCountry' => $address->getCountryId(),
-            'accountCity' => $address->getCity(),
-            'accountStreet1' => join(" ", $address->getStreet()),
-            'accountEmail' => $address->getEmail(),
-            'accountFirstName' => $address->getFirstname(),
-            'accountLastName' => $address->getLastname(),
-            'accountPostalCode' => $address->getPostcode(),
-            'phone' => $address->getTelephone(),
+            'paymentSettings' => [
+                'terminalId' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
+                'returnUrl' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
+                'failureReturnUrl' => $this->urlBuilder->getUrl('dna/result/failure'),
+                'callbackUrl' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
+                'failureCallbackUrl' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/failure'),
+            ],
+            'customerDetails' => [
+                'email' => $billingAddress->getEmail(),
+                'accountDetails' => [
+                    'accountId' => $this->checkoutSession->getCustomer() ? $this->checkoutSession->getCustomer()->getId() : '',
+                ],
+                'billingAddress' => $this->getAddress($billingAddress),
+                'deliveryDetails' => [
+                    'deliveryAddress' => $this->getAddress($order->getShippingAddress()),
+                ]
+            ],
             'language' => 'en-gb',
-            'shippingAddress' => $this->getShippingAddress($order),
             'amountBreakdown' => $this->getAmountBreakDown($order),
-            'orderLines' => $this->getOrderLines($order)
+            'orderLines' => $this->getOrderLines($order),
         ];
 
         if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
@@ -182,7 +180,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
             'invoiceId' => $order->getIncrementId(),
             'currency' => $order->getOrderCurrencyCode(),
-            'amount' => $order->getGrandTotal()
+            'amount' => floatval($order->getGrandTotal())
         ];
     }
 
