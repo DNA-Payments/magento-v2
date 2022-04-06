@@ -55,11 +55,11 @@ define(
                             events: {
                                 cancelled: () =>  {
                                     fullScreenLoader.startLoader();
-                                    window.location.href = paymentData.failureBackLink + '?cancel=1'
+                                    window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1'
                                 },
                                 declined: () => {
                                     fullScreenLoader.startLoader();
-                                    window.location.href = paymentData.failureBackLink
+                                    window.location.href = paymentData.paymentSettings.failureReturnUrl
                                 }
                             }
                         });
