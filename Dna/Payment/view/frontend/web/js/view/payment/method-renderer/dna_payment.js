@@ -38,7 +38,7 @@ define(
             getOrder(){
                 const self = this;
                 fullScreenLoader.startLoader();
-                storage.post('rest/default/V1/dna-payment/start-and-get')
+                storage.post('rest/V1/dna-payment/start-and-get')
                     .done(function (res) {
                             
                         const { paymentData, auth, isTestMode, integrationType } = (function() {

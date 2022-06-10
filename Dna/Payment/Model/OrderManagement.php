@@ -147,8 +147,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 'terminalId' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
                 'returnUrl' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
                 'failureReturnUrl' => $this->urlBuilder->getUrl('dna/result/failure'),
-                'callbackUrl' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/confirm'),
-                'failureCallbackUrl' => $this->urlBuilder->getUrl('rest/default/V1/dna-payment/failure'),
+                'callbackUrl' => $this->getUrl('rest/V1/dna-payment/confirm'),
+                'failureCallbackUrl' => $this->getUrl('rest/V1/dna-payment/failure'),
             ],
             'customerDetails' => [
                 'email' => $billingAddress->getEmail(),
@@ -170,6 +170,10 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         }
 
         return $paymentData;
+    }
+
+    public function getUrl($url) {
+        return $this->storeManager->getStore()->getBaseUrl() . $url;
     }
 
     public function getAuthData($order)
