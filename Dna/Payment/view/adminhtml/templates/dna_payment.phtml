@@ -1,0 +1,11 @@
+<?php
+
+if ($block->isDnaPayment()) {
+    $order = $block->getOrder();
+    $order_id = $order->getIncrementId();
+    ?>
+
+<div id="order_id_for_dna_payment" style="display:none"><?php echo $order_id; ?></div>
+
+<?php } ?>
+

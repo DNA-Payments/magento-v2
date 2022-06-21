@@ -19,7 +19,7 @@ class MainPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
     /**
      * @var string
      */
-    protected $_formBlockType = \Magento\Payment\Block\Form::class;
+    protected $_formBlockType = \Dna\Payment\Block\Form::class;
 
     /**
      * @var string
@@ -247,6 +247,7 @@ class MainPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
                 'isTestMode' => $this->isTestMode,
                 'scopes' => [
                     'allowHosted' => true,
+                    'allowSeamless' => true,
                     'allowEmbedded' => $this->config->getIntegrationType($this->storeId) == '1'
                 ]
             ]

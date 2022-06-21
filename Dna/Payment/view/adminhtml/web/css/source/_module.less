@@ -1,0 +1,67 @@
+// /**
+//  * Copyright © Magento, Inc. All rights reserved.
+//  * See COPYING.txt for license details.
+//  */
+
+@dna-error__color: @color-apricot;
+@dna-focus__color: @color-blue-pure;
+@dna-success__color: @color-green-apple;
+
+.admin__payment-method-wrapper {
+    min-width: 240px;
+}
+
+.dna-tooltip {
+    .lib-tooltip(left);
+}
+
+.order-discounts {
+    .dna-tooltip {
+        float: right;
+        margin-top: 2.1rem;
+
+        .action-secondary {
+            float: none;
+            margin-top: 0;
+            margin-left: 2rem;
+        }
+    }
+}
+
+.admin__payment-methods {
+    .dna-tooltip {
+        padding-left: 2rem;
+        margin-left: -2rem;
+    }
+}
+
+#payment_form_dna_payment {
+
+    .hosted-control {
+        &.hosted-cid {
+            width: 10rem;
+        }
+    }
+
+    .hosted-error {
+        clear: both;
+        color: @dna-error__color;
+        height: 0;
+        opacity: 0;
+    }
+
+    .dna-payments-hosted-field {
+        &-focused {
+            border: 1px solid @dna-focus__color;
+        }
+        
+        &-invalid {
+            border: 1px solid @dna-error__color;
+            
+            & ~ .hosted-error {
+                height: auto;
+                opacity: 1;
+            }
+        }
+    }
+}

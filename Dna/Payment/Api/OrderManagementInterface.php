@@ -11,6 +11,25 @@ interface OrderManagementInterface
     public function startAndGetOrder();
 
     /**
+    * Cancel order
+    * @param string $orderId
+    * @return void
+    **/
+    public function cancelOrder($orderId);
+
+    /**
+    * Get dumb auth data for validating
+    * @return object
+    **/
+    public function getDnaDumbAuthData();
+
+    /**
+    * @param string $orderId
+    * @return void
+    **/
+    public function getDnaPaymentData($orderId);
+
+    /**
      * @param string $invoiceId
      * @param string $id
      * @param string $amount

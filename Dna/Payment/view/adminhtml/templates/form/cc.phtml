@@ -1,0 +1,113 @@
+<?php
+/**
+ * Copyright © 2013-2017 Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/** @var Dna\Payment\Block\Form $block */
+$code = $block->getMethodCode();
+?>
+<fieldset
+    class="admin__fieldset payment-method"
+    id="payment_form_<?= $block->escapeHtmlAttr($code) ?>"
+    style="display:none;"
+    data-mage-init='{ "dnaPaymentForm": {
+        "code": "<?= $block->escapeHtmlAttr($code) ?>"
+    } }'
+>
+    <div id="<?= $block->escapeHtmlAttr($code) ?>_hosted-fields" style="display:none;">
+        <div class="admin__field">
+            <label class="label admin__field-label">
+                <span><?= $block->escapeHtml(__('Card details capture method')) ?></span>
+            </label>
+            <div class="admin__field-control control">
+                <div class="admin__field-option">
+                    <input  type="radio"
+                            checked="true"
+                            id="<?= $block->escapeHtmlAttr($code) ?>_telephone"
+                            class="admin__control-radio"
+                            name="<?= $block->escapeHtmlAttr($code) ?>_entry_mode"
+                            value="telephone-order">
+                    <label for="<?= $block->escapeHtmlAttr($code) ?>_telephone" class="admin__field-label">
+                        <span><?= $block->escapeHtml(__('Telephone')); ?></span>
+                    </label>
+                </div>
+
+                <div class="admin__field-option">
+                    <input  type="radio"
+                            id="<?= $block->escapeHtmlAttr($code) ?>_email"
+                            class="admin__control-radio"
+                            name="<?= $block->escapeHtmlAttr($code) ?>_entry_mode"
+                            value="mail-order">
+                    <label for="<?= $block->escapeHtmlAttr($code) ?>_email" class="admin__field-label">
+                        <span><?= $block->escapeHtml(__('Email')); ?></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin__field _required">
+            <label class="label admin__field-label">
+                <span><?= $block->escapeHtml(__('Cardholder name')) ?></span>
+            </label>
+            <div class="admin__field-control control">
+                <div id="<?= $block->escapeHtmlAttr($code) ?>_cc_name" class="admin__control-text hosted-control">
+                </div>
+                <div class="hosted-error">
+                    <?= $block->escapeHtml(__('Please, enter valid Cardholder name')) ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin__field _required">
+            <label class="label admin__field-label">
+                <span><?= $block->escapeHtml(__('Card number')) ?></span>
+            </label>
+            <div class="admin__field-control control">
+                <div id="<?= $block->escapeHtmlAttr($code) ?>_cc_number" class="admin__control-text hosted-control">
+                </div>
+                <div class="hosted-error">
+                    <?= $block->escapeHtml(__('Please, enter valid Card number')) ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin__field _required">
+            <label class="label admin__field-label">
+                <span><?= $block->escapeHtml(__('Expiry date')) ?></span>
+            </label>
+            <div class="admin__field-control control">
+                <div id="<?= $block->escapeHtmlAttr($code) ?>_cc_exp_date" class="admin__control-text hosted-control"></div>
+
+                <div class="hosted-error"><?= $block->escapeHtml(__('Please, enter valid Expiry date')) ?></div>
+            </div>
+        </div>
+
+        <div class="admin__field _required">
+            <label class="label admin__field-label">
+                <span><?= $block->escapeHtml(__('CSC/CVV')) ?></span>
+            </label>
+            <div class="admin__field-control control">
+                <div id="<?= $block->escapeHtmlAttr($code) ?>_cc_cid"
+                    class="admin__control-text hosted-control hosted-cid"></div>
+
+                <div class="hosted-error">
+                    <?= $block->escapeHtml(__('Please, enter valid CSC/CVV')) ?>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($block->isVaultEnabled()): ?>
+            <div class="field-tooltip-content">
+                <input type="checkbox"
+                    id="<?= $block->escapeHtmlAttr($code) ?>_vault"
+                    name="payment[is_active_payment_token_enabler]"
+                    class="admin__control-checkbox"/>
+                <label class="label" for="<?= $block->escapeHtmlAttr($code) ?>_vault">
+                    <span><?= $block->escapeHtml('Save for later use.') ?></span>
+                </label>
+            </div>
+        <?php endif; ?>
+    </div>
+
+</fieldset>

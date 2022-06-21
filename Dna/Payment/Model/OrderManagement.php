@@ -36,6 +36,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $session;
     protected $storeManager;
     protected $urlBuilder;
+    protected $backendUrlManager;
     protected $isTestMode;
     protected $dnaPayment;
     protected $storeId;
@@ -48,7 +49,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         Config $config,
         SessionManagerInterface $session,
         StoreManagerInterface $storeManager,
-        UrlInterface $urlBuilder
+        UrlInterface $urlBuilder,
+        \Magento\Backend\Model\Url $backendUrlManager
     ) {
         $this->orderRepository = $orderRepository;
         $this->orderFactory = $orderFactory;
@@ -58,6 +60,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->session = $session;
         $this->storeManager = $storeManager;
         $this->urlBuilder = $urlBuilder;
+        $this->backendUrlManager = $backendUrlManager;
         $this->storeId = $this->session->getStoreId();
         $this->isTestMode = $this->config->getTestMode($this->storeId);
         $this->dnaPayment = new DNAPayments(
@@ -160,7 +163,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     'deliveryAddress' => $this->getAddress($order->getShippingAddress()),
                 ]
             ],
-            'language' => 'en-gb',
             'amountBreakdown' => $this->getAmountBreakDown($order),
             'orderLines' => $this->getOrderLines($order),
         ];
@@ -203,6 +205,65 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'auth' => $result,
             'isTestMode' => $this->isTestMode,
             'integrationType' => $this->config->getIntegrationType($this->storeId)
+        ];
+    }
+
+    /**
+     *
+     * @return void
+     * @throws Error
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function getDnaPaymentData($orderId)
+    {
+        $order = Helpers::getOrderInfo($orderId);
+        $result = $this->dnaPayment->auth($this->getAuthData($order));
+        return [
+            'paymentData' => $this->getPaymentData($order),
+            'auth' => $result,
+            'isTestMode' => $this->isTestMode,
+            'integrationType' => $this->config->getIntegrationType($this->storeId),
+            'adminOrderViewUrl' => $this->backendUrlManager->getUrl('sales/order/view', ['order_id' => $order->getId()])
+        ];
+    }
+
+    /**
+    * Get dumb auth data for validating
+    * @return object
+    **/
+    public function getDnaDumbAuthData()
+    {
+        $auth = $this->dnaPayment->auth([
+            'client_id' => $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId),
+            'client_secret' => $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId),
+            'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
+            'invoiceId' => null,
+            'currency' => 'GBP',
+            'amount' => floatval(1)
+        ]);
+        return [
+            'accessToken' => $auth['access_token'],
+            'isTest' => $this->isTestMode,
+        ];
+    }
+
+    /**
+    * Cancel order
+    * @param string $orderId
+    * @return void
+    **/
+    public function cancelOrder($orderId)
+    {
+        $order = $this->orderFactory->create()->loadByIncrementId($orderId);
+
+        try {
+            $order->cancel()->save();
+        } catch (\Exception $e) {
+            throw new Error(__('Error can not cancel order ' + $orderId));
+        }
+
+        return [
+            'id' => $order->getId()
         ];
     }
 
