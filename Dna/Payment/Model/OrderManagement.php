@@ -292,7 +292,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
     public static function isClosedPaymentOrder(\Magento\Sales\Model\Order $order)
     {
-        return $order->getState() == $order::STATE_CLOSED || $order->getState() == $order::STATE_CANCELED;
+        return $order->getState() == $order::STATE_CLOSED || $order->getState() == $order::STATE_COMPLETE;
     }
 
     private function savePayPalOrderDetail(\Magento\Sales\Model\Order $order, $input, $isAddOrderNode)
@@ -413,6 +413,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             return;
         }
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
+
         if ($this->dnaPayment->isValidSignature([
                 'id' => $id,
                 'amount' => $amount,
@@ -424,19 +425,18 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ], $secret) && $success) {
             try {
                 $orderPayment = $order->getPayment();
-                $isCompletedOrder = !$this->isPendingPaymentOrder($order) && !$this->isClosedPaymentOrder($order);
-                if ($isCompletedOrder && !empty($paypalCaptureStatus)) {
-                    $this->savePayPalOrderDetail($order, [
-                        'paypalCaptureStatus' => $paypalCaptureStatus,
-                        'paypalCaptureStatusReason' => $paypalCaptureStatusReason,
-                        'paypalOrderStatus' => $paypalOrderStatus
-                    ], true);
-                } else {
+                $isCompletedOrder = $this->isClosedPaymentOrder($order);
+                
+                if (!$isCompletedOrder){
+                    $this->setOrderStatus($invoiceId, Order::STATE_PENDING_PAYMENT);
+                    $order = Helpers::getOrderInfo($invoiceId);
+
                     $orderPayment
                         ->setTransactionId($id)
                         ->addTransaction($settled ? Transaction::TYPE_CAPTURE : Transaction::TYPE_AUTH, null, true)
                         ->setIsTransactionClosed($settled)
                         ->save();
+
                     $orderPayment->setAdditionalInformation('id', $id);
                     $orderPayment->setAdditionalInformation('rrn', $rrn);
                     $orderPayment->setAdditionalInformation('message', $message);
@@ -474,6 +474,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                         $this->setOrderStatus($invoiceId, Order::STATE_PAYMENT_REVIEW);
                     }
                     $this->sendEmail($invoiceId);
+                } else if (!empty($paypalCaptureStatus)) {
+                    $this->savePayPalOrderDetail($order, [
+                        'paypalCaptureStatus' => $paypalCaptureStatus,
+                        'paypalCaptureStatusReason' => $paypalCaptureStatusReason,
+                        'paypalOrderStatus' => $paypalOrderStatus
+                    ], true);
                 }
             } catch (\Magento\Checkout\Exception $e) {
                 $this->logger->error($e);
@@ -495,6 +501,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $errorCode
      * @param boolean $success
      * @param boolean $settled
+     * @param string $paymentMethod
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
      * @param string $paypalOrderStatus
@@ -514,6 +521,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $errorCode = null,
         $success = null,
         $settled = null,
+        $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
         $paypalOrderStatus = null
@@ -526,6 +534,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         $orderPayment = $order->getPayment();
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
+
         if ($this->dnaPayment->isValidSignature([
             'id' => $id,
             'amount' => $amount,
@@ -536,17 +545,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'settled' => $settled,
             'signature' => $signature
         ], $secret)) {
-            $isCompletedOrder = !$this->isPendingPaymentOrder($order) && !$this->isClosedPaymentOrder($order);
+            $isCompletedOrder = $this->isClosedPaymentOrder($order);
 
-            if ($isCompletedOrder && !empty($paypalCaptureStatus)) {
-                $this->savePayPalOrderDetail($order, [
-                    'paypalCaptureStatus' => $paypalCaptureStatus,
-                    'paypalCaptureStatusReason' => $paypalCaptureStatusReason,
-                    'paypalOrderStatus' => $paypalOrderStatus
-                ], true);
-            } else {
+            if (!$isCompletedOrder) {
                 $order->addStatusHistoryComment("Your payment with DNA Payment is failed. Transaction #$id");
-
+                
                 $orderPayment
                     ->setTransactionId($id)
                     ->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true)
@@ -566,8 +569,15 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 }
 
                 $this->setOrderStatus($invoiceId, $order::STATE_CANCELED);
+            } else if (!empty($paypalCaptureStatus)) {
+                $this->savePayPalOrderDetail($order, [
+                    'paypalCaptureStatus' => $paypalCaptureStatus,
+                    'paypalCaptureStatusReason' => $paypalCaptureStatusReason,
+                    'paypalOrderStatus' => $paypalOrderStatus
+                ], true);
             }
         }
+
         return $invoiceId;
     }
 }

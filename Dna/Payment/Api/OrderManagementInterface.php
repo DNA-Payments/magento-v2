@@ -80,6 +80,7 @@ interface OrderManagementInterface
      * @param string $errorCode
      * @param boolean $success
      * @param boolean $settled
+     * @param string $paymentMethod
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
      * @param string $paypalOrderStatus
@@ -98,6 +99,7 @@ interface OrderManagementInterface
         $errorCode = null,
         $success = null,
         $settled = null,
+        $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
         $paypalOrderStatus = null
