@@ -103,7 +103,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
     public function getAmountBreakDown(Order $order)
     {
-        $productTotal = round((float)$this->getProductTotalAmount($order), 2);
+        $productTotal = round($this->getProductTotalAmount($order), 2);
         $shippingTotal = round((float)$order->getShippingAmount(), 2);
         $taxTotal = round((float)$order->getTaxAmount(), 2);
 
@@ -111,8 +111,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'itemTotal' => ['totalAmount' => $productTotal],
             'shipping' => ['totalAmount' => $shippingTotal],
             'taxTotal' => ['totalAmount' => $taxTotal],
-            'discount' => ['totalAmount' => round((float)abs($order->getDiscountAmount()), 2)],
-            'shippingDiscount' => ['totalAmount' => round((float)abs($order->getShippingDiscountAmount()), 2)]
+            'discount' => ['totalAmount' => round(abs((float)$order->getDiscountAmount()), 2)],
+            'shippingDiscount' => ['totalAmount' => round(abs((float)$order->getShippingDiscountAmount()), 2)]
         ];
     }
 
