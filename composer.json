@@ -34,7 +34,7 @@
     "magento/module-payment": "*",
     "magento/framework": "*",
     "dna/dnapayments-sdk-php": "2.0.0",
-    "magento/module-vault": "^100.0.0"
+    "magento/module-vault": "^101.0.0"
   },
   "require-dev": {
     "magento/magento-composer-installer": "0.4.0"
