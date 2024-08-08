@@ -33,11 +33,12 @@
     "magento/module-checkout": "*",
     "magento/module-payment": "*",
     "magento/framework": "*",
-    "dna/dnapayments-sdk-php": "2.0.0"
+    "dna/dnapayments-sdk-php": "2.0.0",
+    "magento/module-vault": "100.1.1"
   },
   "require-dev": {
-    "magento/magento-composer-installer": "^0.4.0"
+    "magento/magento-composer-installer": "0.4.0"
   },
   "type": "magento2-module",
-  "version": "1.4.0"
+  "version": "1.5.0-beta"
 }

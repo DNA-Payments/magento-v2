@@ -20,6 +20,11 @@ use Magento\Sales\Model\OrderFactory;
 use Magento\Setup\Exception;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
+use Magento\Vault\Api\PaymentTokenRepositoryInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Vault\Api\Data\PaymentTokenFactoryInterface;
+use Magento\Vault\Model\PaymentTokenManagement;
+
 
 /**
  * Guest payment information management model.
@@ -28,6 +33,36 @@ use Psr\Log\LoggerInterface;
  */
 class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 {
+    private static $ccMapper = [
+        'americanexpress' => 'AE',
+        'amex' => 'AE',
+        'amex_cpc' => 'AE',
+        'diners' => 'DN',
+        'dinersclub' => 'DN',
+        'discover' => 'DI',
+        'jcb' => 'JCB',
+        'maestro' => 'MI',
+        'uk_maestro' => 'MI',
+        'mastercard' => 'MC',
+        'mastercard_one' => 'MC',
+        'mastercard_debit' => 'MC',
+        'visa' => 'VI',
+        'visa_atm_only' => 'VI',
+        'visa_cpc_mi_only' => 'VI',
+        'visa_cpc_vat' => 'VI',
+        'visa_debit' => 'VI',
+        'visa_electron' => 'VI',
+        'visa_purchasing' => 'VI',
+        'unionpay' => 'UN',
+        'unionpay_amex' => 'UN',
+        'unionpay_diners' => 'UN',
+        'unionpay_jcb' => 'UN',
+        'unionpay_maestro' => 'UN',
+        'unionpay_mastercard' => 'UN',
+        'unionpay_visa' => 'UN',
+    ];
+
+
     protected $orderRepository;
     protected $orderFactory;
     protected $checkoutSession;
@@ -40,18 +75,27 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $isTestMode;
     protected $dnaPayment;
     protected $storeId;
+    protected $paymentTokenRepository;
+    protected $paymentTokenFactory;
+    protected $encryptor;
+    protected $paymentTokenManagement;
 
     public function __construct(
-        OrderRepositoryInterface $orderRepository,
-        OrderFactory $orderFactory,
-        Session $checkoutSession,
-        LoggerInterface $logger,
-        Config $config,
-        SessionManagerInterface $session,
-        StoreManagerInterface $storeManager,
-        UrlInterface $urlBuilder,
-        \Magento\Backend\Model\Url $backendUrlManager
-    ) {
+        OrderRepositoryInterface        $orderRepository,
+        OrderFactory                    $orderFactory,
+        Session                         $checkoutSession,
+        LoggerInterface                 $logger,
+        Config                          $config,
+        SessionManagerInterface         $session,
+        StoreManagerInterface           $storeManager,
+        UrlInterface                    $urlBuilder,
+        \Magento\Backend\Model\Url      $backendUrlManager,
+        PaymentTokenRepositoryInterface $paymentTokenRepository,
+        PaymentTokenFactoryInterface    $paymentTokenFactory,
+        EncryptorInterface              $encryptor,
+        PaymentTokenManagement          $paymentTokenManagement
+    )
+    {
         $this->orderRepository = $orderRepository;
         $this->orderFactory = $orderFactory;
         $this->checkoutSession = $checkoutSession;
@@ -72,9 +116,14 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 ]
             ]
         );
+        $this->paymentTokenFactory = $paymentTokenFactory;
+        $this->encryptor = $encryptor;
+        $this->paymentTokenRepository = $paymentTokenRepository;
+        $this->paymentTokenManagement = $paymentTokenManagement;
     }
 
-    public function getAddress($address) {
+    public function getAddress($address)
+    {
         if ($address === null) {
             return null;
         }
@@ -156,7 +205,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'customerDetails' => [
                 'email' => $billingAddress->getEmail(),
                 'accountDetails' => [
-                    'accountId' => $this->checkoutSession->getCustomer() ? $this->checkoutSession->getCustomer()->getId() : '',
+                    'accountId' => $order->getCustomerId() ? $order->getCustomerId() : '',
                 ],
                 'billingAddress' => $this->getAddress($billingAddress),
                 'deliveryDetails' => [
@@ -174,7 +223,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         return $paymentData;
     }
 
-    public function getUrl($url) {
+    public function getUrl($url)
+    {
         return $this->storeManager->getStore()->getBaseUrl() . $url;
     }
 
@@ -200,11 +250,44 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     {
         $order = $this->checkoutSession->getLastRealOrder();
         $result = $this->dnaPayment->auth($this->getAuthData($order));
+
+        $cards = [];
+        $customerId = $order->getCustomerId();
+        if ($customerId) {
+            $tokens = $this->paymentTokenManagement->getVisibleAvailableTokens($customerId);
+
+            foreach ($tokens as $token) {
+                $details = json_decode($token->getTokenDetails() ?: '{}', true);
+
+                if (
+                    $token->getPaymentMethodCode() == \Dna\Payment\Model\Config::PAYMENT_CODE &&
+                    isset($details['cardholderName']) &&
+                    isset($details['cardSchemeId']) &&
+                    isset($details['cardSchemeName']) &&
+                    isset($details['panStar']) &&
+                    isset($details['expirationDate'])
+                ) {
+                    $encryptedToken = $token->getGatewayToken();
+                    $cardTokenId = $this->encryptor->decrypt($encryptedToken);
+
+                    $cards[] = [
+                        'merchantTokenId' => $cardTokenId,
+                        'cardSchemeId' => $details['cardSchemeId'],
+                        'cardSchemeName' => $details['cardSchemeName'],
+                        'panStar' => $details['panStar'],
+                        'cardName' => $details['cardholderName'],
+                        'expiryDate' => $details['expirationDate'],
+                    ];
+                }
+            }
+        }
+
         return [
             'paymentData' => $this->getPaymentData($order),
             'auth' => $result,
             'isTestMode' => $this->isTestMode,
-            'integrationType' => $this->config->getIntegrationType($this->storeId)
+            'integrationType' => $this->config->getIntegrationType($this->storeId),
+            'savedCards' => $cards
         ];
     }
 
@@ -228,9 +311,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     }
 
     /**
-    * Get dumb auth data for validating
-    * @return object
-    **/
+     * Get dumb auth data for validating
+     * @return object
+     **/
     public function getDnaDumbAuthData()
     {
         $auth = $this->dnaPayment->auth([
@@ -248,10 +331,10 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     }
 
     /**
-    * Cancel order
-    * @param string $orderId
-    * @return void
-    **/
+     * Cancel order
+     * @param string $orderId
+     * @return void
+     **/
     public function cancelOrder($orderId)
     {
         $order = $this->orderFactory->create()->loadByIncrementId($orderId);
@@ -386,6 +469,13 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
      * @param string $paypalOrderStatus
+     * @param string $cardTokenId
+     * @param string $cardExpiryDate
+     * @param string $cardSchemeId
+     * @param string $cardSchemeName
+     * @param string $cardPanStarred
+     * @param string $storeCardOnFile
+     * @param string $cardholderName
      * @return void
      * @throws Exception
      */
@@ -405,8 +495,16 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
-        $paypalOrderStatus = null
-    ) {
+        $paypalOrderStatus = null,
+        $cardTokenId = null,
+        $cardExpiryDate = null,
+        $cardSchemeId = null,
+        $cardSchemeName = null,
+        $cardPanStarred = null,
+        $storeCardOnFile = null,
+        $cardholderName = null
+    )
+    {
         $order = Helpers::getOrderInfo($invoiceId);
 
         if (!$this->isDNAPaymentOrder($order)) {
@@ -474,6 +572,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                         $this->setOrderStatus($invoiceId, Order::STATE_PAYMENT_REVIEW);
                     }
                     $this->sendEmail($invoiceId);
+
+                    $customerId = $order->getCustomerId();
+                    if ($customerId && $paymentMethod == "card" && $storeCardOnFile) {
+                        $this->saveToken($customerId, $cardholderName, $cardTokenId, $cardSchemeId, $cardSchemeName, $cardPanStarred, $cardExpiryDate);
+                    }
                 } else if (!empty($paypalCaptureStatus)) {
                     $this->savePayPalOrderDetail($order, [
                         'paypalCaptureStatus' => $paypalCaptureStatus,
@@ -525,7 +628,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
         $paypalOrderStatus = null
-    ) {
+    )
+    {
         $order = Helpers::getOrderInfo($invoiceId);
 
         if (!$this->isDNAPaymentOrder($order)) {
@@ -579,5 +683,66 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         }
 
         return $invoiceId;
+    }
+
+    private function saveToken($customerId, $cardholderName, $cardTokenId, $cardSchemeId, $cardType, $maskedCC, $cardExpiryDate)
+    {
+        $lastFourDigits = substr($maskedCC, -4);
+
+        $paymentToken = $this->paymentTokenFactory->create(
+            PaymentTokenFactoryInterface::TOKEN_TYPE_CREDIT_CARD
+        );
+
+        $paymentToken->setCustomerId($customerId);
+        $paymentToken->setPaymentMethodCode(\Dna\Payment\Model\Config::PAYMENT_CODE);
+        $paymentToken->setTokenDetails($this->convertDetailsToJSON(
+            [
+                'type' => $this->getCardTypeCode($cardType),
+                'maskedCC' => $lastFourDigits,
+                'expirationDate' => $cardExpiryDate,
+                'cardSchemeId' => $cardSchemeId,
+                'cardSchemeName' => $cardType,
+                'panStar' => $maskedCC,
+                'cardholderName' => $cardholderName
+            ]
+        ));
+        $paymentToken->setExpiresAt($this->getExpirationDate($cardExpiryDate));
+        $paymentToken->setGatewayToken($this->encryptor->encrypt($cardTokenId));
+
+        $publicHash = $this->generatePublicHash($customerId, $paymentToken->getType(), $paymentToken->getTokenDetails());
+        $paymentToken->setPublicHash($publicHash);
+
+        $this->paymentTokenRepository->save($paymentToken);
+    }
+
+    protected function getExpirationDate($expiryDate)
+    {
+        $dateParts = explode('/', $expiryDate);
+        $year = strlen($dateParts[1]) == 2 ? '20' . $dateParts[1] : $dateParts[1];
+
+        return sprintf('%s-%s-01 00:00:00', $year, $dateParts[0]);
+    }
+
+    protected function convertDetailsToJSON($details)
+    {
+        return json_encode($details, JSON_UNESCAPED_UNICODE);
+    }
+
+    private function generatePublicHash($customerId, $token_type, $tokenDetails)
+    {
+        $hashKey = $customerId;
+
+        $hashKey .= \Dna\Payment\Model\Config::PAYMENT_CODE
+            . $token_type
+            . $tokenDetails;
+
+        return $this->encryptor->getHash($hashKey);
+    }
+
+    public static function getCardTypeCode($cardType)
+    {
+        $cardTypeCode = str_replace([' ', '(', ')'], ['_', '', ''], strtolower($cardType));
+
+        return isset(self::$ccMapper[$cardTypeCode]) ? self::$ccMapper[$cardTypeCode] : null;
     }
 }

@@ -12,6 +12,7 @@
                 <active>0</active>
                 <model>Dna\Payment\Model\MainPaymentMethod</model>
                 <title>Visa / Mastercard / American Express / Diners Club / Other</title>
+                <payment_method_code>dna_payment</payment_method_code>
                 <payment_action>authorize_capture</payment_action>
                 <gateway_order_description>Pay with your credit card via our payment gateway.</gateway_order_description>
                 <order_status_success>processing</order_status_success>

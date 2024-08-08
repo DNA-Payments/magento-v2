@@ -40,20 +40,23 @@ define(
                 fullScreenLoader.startLoader();
                 storage.post('rest/V1/dna-payment/start-and-get')
                     .done(function (res) {
-                            
-                        const { paymentData, auth, isTestMode, integrationType } = (function() {
+                        const {paymentData, auth, isTestMode, integrationType, savedCards} = (function () {
                             if (Array.isArray(res)) {
-                                const [p, a, t, i] = res
-                                return { paymentData: p, auth: a, isTestMode: t, integrationType: i }
+                                const [p, a, t, i, s] = res
+                                return {paymentData: p, auth: a, isTestMode: t, integrationType: i, savedCards: s}
                             }
                             return res || {}
                         })()
 
                         paymentData.auth = auth;
+                        const isCustomerAuthenticated = Boolean(paymentData.customerDetails.accountDetails.accountId)
+
                         window.DNAPayments.configure({
                             isTestMode,
+                            allowSavingCards: isCustomerAuthenticated,
+                            cards: isCustomerAuthenticated ? savedCards : [],
                             events: {
-                                cancelled: () =>  {
+                                cancelled: () => {
                                     fullScreenLoader.startLoader();
                                     window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1'
                                 },
@@ -63,28 +66,28 @@ define(
                                 }
                             }
                         });
-                    
+
                         if (integrationType === '1') {
                             window.DNAPayments.openPaymentIframeWidget(paymentData);
                         } else {
                             window.DNAPayments.openPaymentPage(paymentData);
                         }
                     }).fail(function (response) {
-                        self.showError('Error: Fail loading order request. Please check your credentials');
-                    }).always(function () {
-                        fullScreenLoader.stopLoader(true);
+                    self.showError('Error: Fail loading order request. Please check your credentials');
+                }).always(function () {
+                    fullScreenLoader.stopLoader(true);
                 })
             },
-            getCode: function() {
+            getCode: function () {
                 return 'dna_payment';
             },
-            getData: function() {
+            getData: function () {
                 return {
                     'method': this.item.method,
                     'additional_data': null
                 };
             },
-            getAddressInfo: function() {
+            getAddressInfo: function () {
                 const address = quote.billingAddress() ? quote.billingAddress() : quote.shippingAddress();
                 return {
                     accountCountry: address.countryId,
@@ -97,44 +100,52 @@ define(
                 }
             },
             getEmail: function () {
-                if(quote.guestEmail) return quote.guestEmail;
+                if (quote.guestEmail) return quote.guestEmail;
                 else return window.checkoutConfig.customerData.email;
             },
             validate() {
-                const { accountCountry, accountCity, accountStreet1, accountFirstName, accountLastName, accountPostalCode, accountEmail } = this.getAddressInfo();
+                const {
+                    accountCountry,
+                    accountCity,
+                    accountStreet1,
+                    accountFirstName,
+                    accountLastName,
+                    accountPostalCode,
+                    accountEmail
+                } = this.getAddressInfo();
                 let isError = false;
 
-                if(!accountCountry || accountCountry.length > 2) {
+                if (!accountCountry || accountCountry.length > 2) {
                     this.showError('Country field is required and code length must be less than 2 symbols');
                     isError = true;
                 }
 
-                if(!accountCity || accountCity.length > 50) {
+                if (!accountCity || accountCity.length > 50) {
                     this.showError('City field is required and length must be less than 50 symbols');
                     isError = true;
                 }
 
-                if(!accountStreet1 || accountStreet1.length > 50) {
+                if (!accountStreet1 || accountStreet1.length > 50) {
                     this.showError('Street field is required and length must be less than 50 symbols');
                     isError = true;
                 }
 
-                if(!accountEmail || accountEmail.length > 256) {
+                if (!accountEmail || accountEmail.length > 256) {
                     this.showError('Email field is required and length must be less than 256 symbols');
                     isError = true;
                 }
 
-                if(!accountFirstName || accountFirstName.length > 32) {
+                if (!accountFirstName || accountFirstName.length > 32) {
                     this.showError('Firstname field is required and length must be less than 32 symbols');
                     isError = true;
                 }
 
-                if(!accountLastName || accountLastName.length > 32) {
+                if (!accountLastName || accountLastName.length > 32) {
                     this.showError('Lastname field is required and length must be less than 32 symbols');
                     isError = true;
                 }
 
-                if(!accountPostalCode || accountPostalCode.length > 13) {
+                if (!accountPostalCode || accountPostalCode.length > 13) {
                     this.showError('Postal code field is required and length must be less than 13 symbols');
                     isError = true;
                 }

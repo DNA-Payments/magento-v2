@@ -46,6 +46,13 @@ interface OrderManagementInterface
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
      * @param string $paypalOrderStatus
+     * @param string $cardTokenId
+     * @param string $cardExpiryDate
+     * @param string $cardSchemeId
+     * @param string $cardSchemeName
+     * @param string $cardPanStarred
+     * @param string $storeCardOnFile
+     * @param string $cardholderName
      * @return void
      */
     public function confirmOrder(
@@ -64,9 +71,15 @@ interface OrderManagementInterface
         $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
-        $paypalOrderStatus = null
+        $paypalOrderStatus = null,
+        $cardTokenId = null,
+        $cardExpiryDate = null,
+        $cardSchemeId = null,
+        $cardSchemeName = null,
+        $cardPanStarred = null,
+        $storeCardOnFile = null,
+        $cardholderName = null
     );
-
     /**
      * @param string $invoiceId
      * @param string $id
