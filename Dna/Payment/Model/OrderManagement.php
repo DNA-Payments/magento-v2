@@ -24,6 +24,7 @@ use Magento\Vault\Api\PaymentTokenRepositoryInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Vault\Api\Data\PaymentTokenFactoryInterface;
 use Magento\Vault\Model\PaymentTokenManagement;
+use Dna\Payment\Helper\DnaLogger;
 
 
 /**
@@ -79,6 +80,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $paymentTokenFactory;
     protected $encryptor;
     protected $paymentTokenManagement;
+    protected $dnaLogger;
 
     public function __construct(
         OrderRepositoryInterface        $orderRepository,
@@ -93,7 +95,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         PaymentTokenRepositoryInterface $paymentTokenRepository,
         PaymentTokenFactoryInterface    $paymentTokenFactory,
         EncryptorInterface              $encryptor,
-        PaymentTokenManagement          $paymentTokenManagement
+        PaymentTokenManagement          $paymentTokenManagement,
+        DnaLogger $dnaLogger
     )
     {
         $this->orderRepository = $orderRepository;
@@ -120,6 +123,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->encryptor = $encryptor;
         $this->paymentTokenRepository = $paymentTokenRepository;
         $this->paymentTokenManagement = $paymentTokenManagement;
+        $this->dnaLogger = $dnaLogger;
     }
 
     public function getAddress($address)
@@ -248,9 +252,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      */
     public function startAndGetOrder()
     {
+        $this->dnaLogger->info('Start order action executed successfully');
         $order = $this->checkoutSession->getLastRealOrder();
         $result = $this->dnaPayment->auth($this->getAuthData($order));
-
         $cards = [];
         $customerId = $order->getCustomerId();
         if ($customerId) {
@@ -333,7 +337,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     /**
      * Cancel order
      * @param string $orderId
-     * @return void
+     * @return array
      **/
     public function cancelOrder($orderId)
     {
@@ -342,7 +346,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         try {
             $order->cancel()->save();
         } catch (\Exception $e) {
-            throw new Error(__('Error can not cancel order ' + $orderId));
+            $this->dnaLogger->logException('Failed to cancel order', $e, [
+                'order_id' => $orderId
+            ]);
+
+            throw new Error(__('Failed to cancel order ' . $orderId));
         }
 
         return [
@@ -359,7 +367,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         try {
             $this->orderRepository->save($order);
         } catch (\Exception $e) {
-            throw new Error(__('Error can not set status ' + $status));
+            $this->dnaLogger->logException('Failed to update order status', $e, [
+                'order_id' => $orderId,
+                'status' => $status,
+            ]);
+            throw new Error(__('Failed to update order ID ' . $orderId . ' with status ' . $status));
         }
     }
 
@@ -383,7 +395,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         try {
             $orderPayment = $order->getPayment();
             $status = $input['paypalOrderStatus'];
-            $сaptureStatus = $input['paypalCaptureStatus'];
+            $captureStatus = $input['paypalCaptureStatus'];
             $reason = isset($input['paypalCaptureStatusReason']) ? $input['paypalCaptureStatusReason'] : null;
 
             $orderAdditionalStatus = $orderPayment->getAdditionalInformation('paypalOrderStatus');
@@ -397,11 +409,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     $errorText .= sprintf('DNA Payments paypal status was changed from "%s" to "%s". ', $orderAdditionalStatus, $status);
                 }
 
-                if ($orderAdditionalCaptureStatus !== $сaptureStatus) {
+                if ($orderAdditionalCaptureStatus !== $captureStatus) {
                     if ($errorText === '') {
-                        $errorText .= sprintf('DNA Payments paypal capture status was changed from "%s" to "%s". ', $orderAdditionalCaptureStatus, $сaptureStatus);
+                        $errorText .= sprintf('DNA Payments paypal capture status was changed from "%s" to "%s". ', $orderAdditionalCaptureStatus, $captureStatus);
                     } else {
-                        $errorText .= sprintf('Capture status was changed from "%s" to "%s". ', $orderAdditionalCaptureStatus, $сaptureStatus);
+                        $errorText .= sprintf('Capture status was changed from "%s" to "%s". ', $orderAdditionalCaptureStatus, $captureStatus);
                     }
                 }
 
@@ -422,12 +434,13 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             }
 
             $orderPayment->setAdditionalInformation('paypalOrderStatus', $status);
-            $orderPayment->setAdditionalInformation('paypalCaptureStatus', $сaptureStatus);
+            $orderPayment->setAdditionalInformation('paypalCaptureStatus', $captureStatus);
             $orderPayment->setAdditionalInformation('paypalCaptureStatusReason', $reason);
             $orderPayment->save();
         } catch (\Magento\Framework\Mail\Exception $exception) {
-            $this->logger->info($exception);
-            return false;
+            $this->dnaLogger->logException('Failed to save PayPal order detail', $exception, [
+                'order_id' => $order->getId()
+            ]);
         }
     }
 
@@ -446,7 +459,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             $emailSender = $objectManager->create('\Magento\Sales\Model\Order\Email\Sender\OrderSender');
             $emailSender->send($order, true);
         } catch (\Magento\Framework\Mail\Exception $exception) {
-            $this->logger->info($exception);
+            $this->dnaLogger->logException('Failed to send email for order ID ' . $orderId, $exception);
             return false;
         }
         return true;
@@ -585,7 +598,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     ], true);
                 }
             } catch (\Magento\Checkout\Exception $e) {
-                $this->logger->error($e);
+                $this->dnaLogger->logException('Failed to confirm order for invoice ID ' . $invoiceId, $e);
             }
         }
         return $invoiceId;
