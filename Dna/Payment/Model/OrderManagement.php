@@ -10,6 +10,7 @@ namespace Dna\Payment\Model;
 use Dna\Payment\Gateway\Config\Config;
 use Dna\Payment\Model\Config as ModelConfig;
 use DNAPayments\DNAPayments;
+use DNAPayments\Util\RequestException;
 use Magento\Checkout\Model\Session;
 use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\UrlInterface;
@@ -25,6 +26,7 @@ use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Vault\Api\Data\PaymentTokenFactoryInterface;
 use Magento\Vault\Model\PaymentTokenManagement;
 use Dna\Payment\Helper\DnaLogger;
+use Magento\Framework\Event\ManagerInterface as EventManager;
 
 
 /**
@@ -81,6 +83,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $encryptor;
     protected $paymentTokenManagement;
     protected $dnaLogger;
+    protected $eventManager;
 
     public function __construct(
         OrderRepositoryInterface        $orderRepository,
@@ -96,7 +99,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         PaymentTokenFactoryInterface    $paymentTokenFactory,
         EncryptorInterface              $encryptor,
         PaymentTokenManagement          $paymentTokenManagement,
-        DnaLogger $dnaLogger
+        DnaLogger                       $dnaLogger,
+        EventManager                    $eventManager
     )
     {
         $this->orderRepository = $orderRepository;
@@ -124,6 +128,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->paymentTokenRepository = $paymentTokenRepository;
         $this->paymentTokenManagement = $paymentTokenManagement;
         $this->dnaLogger = $dnaLogger;
+        $this->eventManager = $eventManager;
     }
 
     public function getAddress($address)
@@ -245,14 +250,13 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     }
 
     /**
-     *
-     * @return string
-     * @throws Error
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @return array
+     * @throws RequestException
      */
     public function startAndGetOrder()
     {
-        $this->dnaLogger->info('Start order action executed successfully');
+        $this->eventManager->dispatch('dna_payment_analytics_event');
+
         $order = $this->checkoutSession->getLastRealOrder();
         $result = $this->dnaPayment->auth($this->getAuthData($order));
         $cards = [];

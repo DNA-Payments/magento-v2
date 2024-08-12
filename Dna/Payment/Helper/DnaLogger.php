@@ -48,6 +48,17 @@ class DnaLogger extends AbstractHelper
     }
 
     /**
+     * Log a warning message
+     *
+     * @param string $message
+     * @param array $context
+     */
+    public function warning($message, array $context = [])
+    {
+        $this->logger->warning($message, $context);
+    }
+
+    /**
      * Log an error message
      *
      * @param string $message
@@ -65,7 +76,7 @@ class DnaLogger extends AbstractHelper
      * @param Exception $e
      * @param array $context Additional context to include in the log
      */
-    public function logException($message, Exception $e, array $context = [])
+    public function logException($message, \Exception $e, array $context = [])
     {
         $this->logger->error($message, array_merge([
             'error_message' => $e->getMessage(),

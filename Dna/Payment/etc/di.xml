@@ -17,7 +17,6 @@
             <argument name="infoBlockType" xsi:type="string">Dna\Payment\Block\Info</argument>
             <argument name="valueHandlerPool" xsi:type="object">DnaPaymentValueHandlerPool</argument>
             <argument name="commandPool" xsi:type="object">DnaPaymentCommandPool</argument> <!-- TODO: remove -->
-            <argument name="logger" xsi:type="object">Dna\Payment\Helper\DnaLogger</argument>
         </arguments>
     </virtualType>
 
@@ -91,5 +90,4 @@
             <argument name="config" xsi:type="object">Dna\Payment\Gateway\Config\Config</argument>
         </arguments>
     </type>
-
 </config>
