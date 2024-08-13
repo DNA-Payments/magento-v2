@@ -29,14 +29,21 @@ class DnaAnalyticsObserver implements ObserverInterface
     {
         try {
             if ($this->dnaAnalytics->hasHashChanged()) {
+                $this->dnaLogger->info('Hash has changed');
+
                 $analyticsData = $this->dnaAnalytics->getAnalyticsData();
                 $analyticsDataJson = json_encode($analyticsData);
+
+                $this->dnaLogger->info('Analytics Data: ' . $analyticsDataJson);
+
                 // TODO: dummy url for testing, replace with actual one
                 $url = 'https://webhook.site/170091f1-8f4e-4c18-a0e0-643e94bd2cb1';
                 $this->curlClient->addHeader('Content-Type', 'application/json');
                 $this->curlClient->post($url, $analyticsDataJson);
 
                 $this->dnaAnalytics->updateHash();
+            } else {
+                $this->dnaLogger->info('Hash did not changed');
             }
         } catch (\Exception $e) {
             $this->dnaLogger->logException('Failed to process dna analytics event', $e);

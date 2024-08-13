@@ -20,7 +20,6 @@ use Magento\Sales\Model\Order\Payment\Transaction;
 use Magento\Sales\Model\OrderFactory;
 use Magento\Setup\Exception;
 use Magento\Store\Model\StoreManagerInterface;
-use Psr\Log\LoggerInterface;
 use Magento\Vault\Api\PaymentTokenRepositoryInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Vault\Api\Data\PaymentTokenFactoryInterface;
@@ -69,7 +68,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $orderRepository;
     protected $orderFactory;
     protected $checkoutSession;
-    protected $logger;
     protected $config;
     protected $session;
     protected $storeManager;
@@ -89,7 +87,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         OrderRepositoryInterface        $orderRepository,
         OrderFactory                    $orderFactory,
         Session                         $checkoutSession,
-        LoggerInterface                 $logger,
         Config                          $config,
         SessionManagerInterface         $session,
         StoreManagerInterface           $storeManager,
@@ -106,7 +103,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->orderRepository = $orderRepository;
         $this->orderFactory = $orderFactory;
         $this->checkoutSession = $checkoutSession;
-        $this->logger = $logger;
         $this->config = $config;
         $this->session = $session;
         $this->storeManager = $storeManager;

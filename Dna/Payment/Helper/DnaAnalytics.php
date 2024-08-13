@@ -8,29 +8,49 @@ use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\App\ProductMetadataInterface;
-
+use Magento\Store\Model\StoreManagerInterface;
+use Dna\Payment\Gateway\Config\Config;
 
 class DnaAnalytics extends AbstractHelper
 {
     protected $fileDriver;
     protected $productMetadata;
     protected $moduleVersionHelper;
+    protected $storeManager;
+    protected $config;
+
+    private $integrationTypes = [
+        0 => 'Hosted',
+        1 => 'Embedded'
+    ];
 
     public function __construct(
         Context $context,
         File $fileDriver,
         ProductMetadataInterface $productMetadata,
-        DnaModuleVersion $moduleVersionHelper
+        DnaModuleVersion $moduleVersionHelper,
+        StoreManagerInterface $storeManager,
+        Config $config
     ) {
         parent::__construct($context);
         $this->fileDriver = $fileDriver;
         $this->productMetadata = $productMetadata;
         $this->moduleVersionHelper = $moduleVersionHelper;
+        $this->storeManager = $storeManager;
+        $this->config = $config;
     }
 
     public function getAnalyticsData()
     {
+        $storeId = $this->storeManager->getStore()->getId();
+        $isTestMode = $this->config->getTestMode($storeId);
+        $integrationId = $this->config->getIntegrationType($storeId);
+        $integrationType = $this->getIntegrationTypeById($integrationId);
+        $terminalId = $isTestMode ? $this->config->getTerminalIdTest($storeId) : $this->config->getTerminalId($storeId);
+
         return [
+            'integrationType' => $integrationType,
+            'terminalId' => $terminalId,
             'phpVersion' => phpversion(),
             'domainName' => $_SERVER['HTTP_HOST'],
             'pluginVersion' => $this->moduleVersionHelper->getModuleVersion('Dna_Payment'),
@@ -89,5 +109,10 @@ class DnaAnalytics extends AbstractHelper
         } catch (\Exception $e) {
             throw new LocalizedException(__('Unable to create hash file: %1', $e->getMessage()));
         }
+    }
+
+    public function getIntegrationTypeById($key)
+    {
+        return isset($this->integrationTypes[$key]) ? $this->integrationTypes[$key] : 'Unknown';
     }
 }
