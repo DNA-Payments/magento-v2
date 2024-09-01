@@ -7,7 +7,6 @@ namespace Dna\Payment\Block;
 
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Payment\Block\Form\Cc;
-use Magento\Payment\Helper\Data;
 use Magento\Payment\Model\Config;
 
 class Form extends Cc

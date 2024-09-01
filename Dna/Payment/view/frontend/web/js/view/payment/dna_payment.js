@@ -14,12 +14,33 @@ define(
         rendererList
     ) {
         'use strict';
-        rendererList.push(
-            {
-                type: 'dna_payment',
-                component: 'Dna_Payment/js/view/payment/method-renderer/dna_payment'
-            }
-        );
+
+        let config = window.checkoutConfig.payment;
+        let dnaPaymentType = 'dna_payment';
+
+        console.log('dna_payments config = ', config);
+        console.log('dna_payments config = ', window.checkoutConfig);
+
+        if (config[dnaPaymentType] && config[dnaPaymentType].isActive && config[dnaPaymentType].integrationType === '2') {
+            console.log('Hosted Fields integration type');
+
+            rendererList.push(
+                {
+                    type: dnaPaymentType,
+                    component: 'Dna_Payment/js/view/payment/method-renderer/hosted-fields'
+                }
+            )
+        } else {
+            console.log('Full / Lightbox integration type');
+
+            rendererList.push(
+                {
+                    type: dnaPaymentType,
+                    component: 'Dna_Payment/js/view/payment/method-renderer/dna_payment'
+                }
+            );
+        }
+
         /** Add view logic here if needed */
         return Component.extend({});
     }

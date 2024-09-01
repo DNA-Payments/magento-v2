@@ -30,6 +30,12 @@ interface OrderManagementInterface
     public function getDnaPaymentData($orderId);
 
     /**
+     * @param string $orderId
+     * @return void
+     **/
+    public function getOrderPaymentData($orderId);
+
+    /**
      * @param string $invoiceId
      * @param string $id
      * @param string $amount
@@ -53,6 +59,7 @@ interface OrderManagementInterface
      * @param string $cardPanStarred
      * @param string $storeCardOnFile
      * @param string $cardholderName
+     * @param string $merchantCustomData
      * @return void
      */
     public function confirmOrder(
@@ -78,7 +85,8 @@ interface OrderManagementInterface
         $cardSchemeName = null,
         $cardPanStarred = null,
         $storeCardOnFile = null,
-        $cardholderName = null
+        $cardholderName = null,
+        $merchantCustomData = null
     );
     /**
      * @param string $invoiceId

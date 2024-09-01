@@ -2,12 +2,12 @@
 
 namespace Dna\Payment\Model;
 
+use Magento\Checkout\Model\ConfigProviderInterface;
 use Magento\Paypal\Model\AbstractConfig;
 
-class Config extends AbstractConfig
+class Config implements ConfigProviderInterface
 {
     const PAYMENT_CODE = 'dna_payment';
-
     const PAYMENT_PAYMENT_ACTION_SALE = 'authorize_capture';
 
     const PAYMENT_PAYMENT_ACTION_AUTH = 'authorize';
@@ -32,7 +32,8 @@ class Config extends AbstractConfig
     {
         return [
             '0' => __('Full Redirect'),
-            '1' => __('iFrame LightBox')
+            '1' => __('iFrame LightBox'),
+            '2' => __('Hosted Fields'),
         ];
     }
 
@@ -46,5 +47,10 @@ class Config extends AbstractConfig
             default:
                 return $paymentAction;
         }
+    }
+
+    public function getConfig()
+    {
+
     }
 }

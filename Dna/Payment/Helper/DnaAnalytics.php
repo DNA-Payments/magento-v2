@@ -21,7 +21,8 @@ class DnaAnalytics extends AbstractHelper
 
     private $integrationTypes = [
         0 => 'Hosted',
-        1 => 'Embedded'
+        1 => 'Embedded',
+        2 => 'Seamless'
     ];
 
     public function __construct(

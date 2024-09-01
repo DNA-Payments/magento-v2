@@ -2,7 +2,7 @@
 
 namespace Dna\Payment\Block\Customer;
 
-use Dna\Payment\Model\Config;
+use Dna\Payment\Model\Ui\ConfigProvider;
 use Magento\Vault\Api\Data\PaymentTokenInterface;
 use Magento\Vault\Block\AbstractCardRenderer;
 
@@ -16,7 +16,7 @@ class CardRenderer extends AbstractCardRenderer
      */
     public function canRender(PaymentTokenInterface $token): bool
     {
-        return $token->getPaymentMethodCode() === Config::PAYMENT_CODE;
+        return $token->getPaymentMethodCode() === ConfigProvider::CODE;
     }
 
     /**

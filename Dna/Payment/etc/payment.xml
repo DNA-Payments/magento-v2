@@ -2,6 +2,11 @@
 
 <payment xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Payment:etc/payment.xsd">
+    <groups>
+        <group id="dna_payment_group">
+            <label>Dna Payments</label>
+        </group>
+    </groups>
     <methods>
         <method name="dna_payment">
             <allow_multiple_address>1</allow_multiple_address>

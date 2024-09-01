@@ -27,14 +27,13 @@ class Config extends \Magento\Payment\Gateway\Config\Config
      * DNA config constructor
      *
      * @param ScopeConfigInterface $scopeConfig
-     * @param null|string $methodCode
+     * @param string|null $methodCode
      * @param string $pathPattern
-     * @param Json|null $serializer
      */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
-        $methodCode = null,
-        $pathPattern = self::DEFAULT_PATH_PATTERN
+        string $methodCode = null,
+        string $pathPattern = self::DEFAULT_PATH_PATTERN
     ) {
         parent::__construct($scopeConfig, $methodCode, $pathPattern);
     }

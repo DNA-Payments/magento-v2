@@ -3,6 +3,6 @@
  */
 var config = {
     paths: {
-        "dnaPaymentsHostedFields": "https://cdn.dnapayments.com/js/hosted-fields/hosted-fields",
+        "dnaPaymentsHostedFields": "https://test-cdn.dnapayments.com/js/hosted-fields/hosted-fields",
      }
 };

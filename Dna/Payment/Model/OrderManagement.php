@@ -297,9 +297,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
     /**
      *
-     * @return void
+     * @return array
      * @throws Error
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws RequestException
      */
     public function getDnaPaymentData($orderId)
     {
@@ -311,6 +311,24 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'isTestMode' => $this->isTestMode,
             'integrationType' => $this->config->getIntegrationType($this->storeId),
             'adminOrderViewUrl' => $this->backendUrlManager->getUrl('sales/order/view', ['order_id' => $order->getId()])
+        ];
+    }
+
+    /**
+     *
+     * @return array
+     * @throws Error
+     * @throws RequestException
+     */
+    public function getOrderPaymentData($orderId)
+    {
+        $order = $this->orderRepository->get($orderId);
+        $result = $this->dnaPayment->auth($this->getAuthData($order));
+        return [
+            'paymentData' => $this->getPaymentData($order),
+            'auth' => $result,
+            'isTestMode' => $this->isTestMode,
+            'integrationType' => $this->config->getIntegrationType($this->storeId),
         ];
     }
 
@@ -489,6 +507,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @param string $cardPanStarred
      * @param string $storeCardOnFile
      * @param string $cardholderName
+     * @param string $merchantCustomData
      * @return void
      * @throws Exception
      */
@@ -515,7 +534,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $cardSchemeName = null,
         $cardPanStarred = null,
         $storeCardOnFile = null,
-        $cardholderName = null
+        $cardholderName = null,
+        $merchantCustomData = null
     )
     {
         $order = Helpers::getOrderInfo($invoiceId);
@@ -587,8 +607,20 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     $this->sendEmail($invoiceId);
 
                     $customerId = $order->getCustomerId();
-                    if ($customerId && $paymentMethod == "card" && $storeCardOnFile) {
-                        $this->saveToken($customerId, $cardholderName, $cardTokenId, $cardSchemeId, $cardSchemeName, $cardPanStarred, $cardExpiryDate);
+
+                    if ($customerId && $paymentMethod == "card") {
+                        $integration_type = $this->config->getIntegrationType($this->storeId);
+
+                        if ($integration_type == '2') {
+                            $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
+
+                            if (isset($merchantCustomDataJson['storeCardOnFile'])) {
+                                $storeCardOnFile = $merchantCustomDataJson['storeCardOnFile'];
+                            }
+                        }
+                        if ($storeCardOnFile) {
+                            $this->saveToken($customerId, $cardholderName, $cardTokenId, $cardSchemeId, $cardSchemeName, $cardPanStarred, $cardExpiryDate);
+                        }
                     }
                 } else if (!empty($paypalCaptureStatus)) {
                     $this->savePayPalOrderDetail($order, [

@@ -24,9 +24,85 @@
             <!-- ko template: getTemplate() --><!-- /ko -->
             <!--/ko-->
         </div>
+        <fieldset
+                data-bind="attr: {class: 'fieldset payment items ccard ' + getCode(), id: getCode() + '_hosted_fields_form'}"
+                style="display:none;">
+            <legend class="legend">
+                <span><!-- ko i18n: 'Credit Card Information'--><!-- /ko --></span>
+            </legend>
+            <br>
+            <div data-bind="attr: {id: getCode() + '_hosted-fields'}">
+                <div class="field number required">
+                    <label data-bind="attr: {for: getCode() + '_cc_name'}" class="label">
+                        <span><!-- ko i18n: 'Cardholder Name'--><!-- /ko --></span>
+                    </label>
+                    <div class="control">
+                        <div data-bind="attr: {id: getCode() + '_cc_name'}" class="hosted-control hosted-cc-name"></div>
+                        <div class="hosted-error"><!-- ko i18n: 'Please, enter valid Cardholder Name'-->
+                            <!-- /ko --></div>
+                    </div>
+                </div>
+
+                <div class="field number required">
+                    <label data-bind="attr: {for: getCode() + '_cc_number'}" class="label">
+                        <span><!-- ko i18n: 'Credit Card Number'--><!-- /ko --></span>
+                    </label>
+                    <div class="control">
+                        <div data-bind="attr: {id: getCode() + '_cc_number'}"
+                             class="hosted-control hosted-cc-number"></div>
+                        <div class="hosted-error"><!-- ko i18n: 'Please, enter valid Credit Card Number'-->
+                            <!-- /ko --></div>
+                    </div>
+                </div>
+
+                <div class="field number required">
+                    <label data-bind="attr: {for: getCode() + '_cc_exp_date'}" class="label">
+                        <span><!-- ko i18n: 'Expiration Date'--><!-- /ko --></span>
+                    </label>
+                    <div class="control">
+                        <div>
+                            <div data-bind="attr: {id: getCode() + '_cc_exp_date'}"
+                                 class="hosted-control hosted-cc-exp-date"></div>
+                            <div class="hosted-error"><!-- ko i18n: 'Please, enter valid Expiration Date'-->
+                                <!-- /ko --></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="field cvv required" data-bind="attr: {id: getCode() + '_cc_type_cvv_div'}">
+                    <label data-bind="attr: {for: getCode() + '_cc_cid'}" class="label">
+                        <span><!-- ko i18n: 'Card Verification Number'--><!-- /ko --></span>
+                    </label>
+                    <div class="control _with-tooltip">
+                        <div data-bind="attr: {id: getCode() + '_cc_cid'}" class="hosted-control hosted-cc-cid"></div>
+                        <div class="hosted-error"><!-- ko i18n: 'Please, enter valid Card Verification Number'-->
+                            <!-- /ko --></div>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <div class="field choice">
+            <input type="checkbox"
+                   name="vault[is_enabled]"
+                   class="checkbox"
+                   data-bind="attr: {'id': getCode() + '_enable_vault'}, checked: vaultEnabler.isActivePaymentTokenEnabler">
+            <label class="label" data-bind="attr: {'for': getCode() + '_enable_vault'}">
+                <span><!-- ko i18n: 'Save for later use.'--><!-- /ko --></span>
+            </label>
+            <div class="field-tooltip toggle">
+                <span class="field-tooltip-action action-vault"
+                      tabindex="0"
+                      data-toggle="dropdown"
+                      data-bind="attr: {title: $t('What is this?')}, mageInit: {'dropdown':{'activeClass': '_active'}}">
+                    <span translate="'What is this?'"></span>
+                </span>
+                <div class="field-tooltip-content"
+                     data-target="dropdown"
+                     translate="'We store your payment information securely on Dna Payments servers via SSL.'"></div>
+            </div>
+        </div>
         <div class="checkout-agreements-block">
             <!-- ko foreach: $parent.getRegion('before-place-order') -->
-                <!-- ko template: getTemplate() --><!-- /ko -->
+            <!-- ko template: getTemplate() --><!-- /ko -->
             <!--/ko-->
         </div>
         <div class="actions-toolbar">

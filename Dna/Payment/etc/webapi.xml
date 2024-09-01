@@ -18,6 +18,12 @@
             <resource ref="anonymous" />
         </resources>
     </route>
+    <route url="/V1/dna-payment/get-order-payment-data" method="GET">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="getOrderPaymentData"/>
+        <resources>
+            <resource ref="anonymous" />
+        </resources>
+    </route>
     <route url="/V1/dna-payment/get-dna-dumb-auth-data" method="GET">
         <service class="Dna\Payment\Api\OrderManagementInterface" method="getDnaDumbAuthData"/>
         <resources>

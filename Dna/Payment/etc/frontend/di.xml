@@ -9,14 +9,31 @@
     <type name="Magento\Checkout\Model\CompositeConfigProvider">
         <arguments>
             <argument name="configProviders" xsi:type="array">
-                <item name="dna_payment_config_provider" xsi:type="object">Dna\Payment\Model\Ui\ConfigProvider</item>
+                <item name="dna_payment" xsi:type="object">Dna\Payment\Model\Ui\ConfigProvider</item>
             </argument>
         </arguments>
     </type>
+
+    <type name="Magento\Payment\Model\CcGenericConfigProvider">
+        <arguments>
+            <argument name="methodCodes" xsi:type="array">
+                <item name="dna_payment" xsi:type="const">Dna\Payment\Model\Ui\ConfigProvider::CODE</item>
+            </argument>
+        </arguments>
+    </type>
+
     <type name="Dna\Payment\Block\Info">
         <arguments>
             <argument name="data" xsi:type="array">
                 <item xsi:type="string" name="is_secure_mode">1</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Magento\Vault\Model\Ui\TokensConfigProvider">
+        <arguments>
+            <argument name="tokenUiComponentProviders" xsi:type="array">
+                <item name="dna_payment" xsi:type="object">Dna\Payment\Model\Ui\TokenUiComponentProvider</item>
             </argument>
         </arguments>
     </type>

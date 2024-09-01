@@ -12,11 +12,38 @@
     <!-- Payment Method Facade configuration -->
     <virtualType name="DnaPaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
         <arguments>
-            <argument name="code" xsi:type="const">\Dna\Payment\Model\Ui\ConfigProvider::CODE</argument>
+            <argument name="code" xsi:type="const">Dna\Payment\Model\Ui\ConfigProvider::CODE</argument>
             <argument name="formBlockType" xsi:type="string">Dna\Payment\Block\Form</argument>
             <argument name="infoBlockType" xsi:type="string">Dna\Payment\Block\Info</argument>
             <argument name="valueHandlerPool" xsi:type="object">DnaPaymentValueHandlerPool</argument>
             <argument name="commandPool" xsi:type="object">DnaPaymentCommandPool</argument> <!-- TODO: remove -->
+        </arguments>
+    </virtualType>
+
+    <!-- Configuration for Vault payments -->
+    <virtualType name="DnaPaymentCreditCardVaultFacade" type="Magento\Vault\Model\Method\Vault">
+        <arguments>
+            <argument name="config" xsi:type="object">DnaPaymentVaultPaymentConfig</argument>
+            <argument name="valueHandlerPool" xsi:type="object">DnaPaymentVaultPaymentValueHandlerPool</argument>
+            <argument name="vaultProvider" xsi:type="object">DnaPaymentGatewayFacade</argument>
+            <argument name="code" xsi:type="const">Dna\Payment\Model\Ui\ConfigProvider::CC_VAULT_CODE</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="DnaPaymentVaultPaymentConfig" type="Magento\Payment\Gateway\Config\Config">
+        <arguments>
+            <argument name="methodCode" xsi:type="const">Dna\Payment\Model\Ui\ConfigProvider::CC_VAULT_CODE</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="DnaPaymentVaultPaymentValueHandlerPool" type="VaultPaymentValueHandlerPool">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="default" xsi:type="string">DnaPaymentVaultPaymentValueHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="DnaPaymentVaultPaymentValueHandler" type="VaultPaymentDefaultValueHandler">
+        <arguments>
+            <argument name="configInterface" xsi:type="object">DnaPaymentVaultPaymentConfig</argument>
         </arguments>
     </virtualType>
 

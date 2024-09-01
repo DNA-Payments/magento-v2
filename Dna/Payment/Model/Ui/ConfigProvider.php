@@ -15,9 +15,10 @@ use Magento\Framework\UrlInterface;
  *
  * @SuppressWarnings(PHPMD.CookieAndSessionMisuse)
  */
-final class ConfigProvider implements ConfigProviderInterface
+class ConfigProvider implements ConfigProviderInterface
 {
     const CODE = 'dna_payment';
+    const CC_VAULT_CODE = 'dna_payment_cc_vault';
 
     /**
      * @var Config
@@ -52,11 +53,14 @@ final class ConfigProvider implements ConfigProviderInterface
     public function getConfig()
     {
         $storeId = $this->session->getStoreId();
+        $integrationType = $this->config->getIntegrationType($storeId);
 
         return [
             'payment' => [
                 self::CODE => [
-                    'isActive' => $this->config->isActive($storeId)
+                    'isActive' => $this->config->isActive($storeId),
+                    'integrationType' => $integrationType,
+                    'ccVaultCode' => self::CC_VAULT_CODE,
                 ]
             ]
         ];
