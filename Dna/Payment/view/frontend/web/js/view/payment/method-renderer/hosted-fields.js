@@ -25,6 +25,8 @@ define(
             initialize: function () {
                 this._super();
 
+                fullScreenLoader.startLoader();
+
                 this.vaultEnabler = new VaultEnabler();
                 this.vaultEnabler.setPaymentCode(this.getVaultCode());
 
@@ -44,10 +46,22 @@ define(
                                 this.threeDModal.close();
                             });
 
+                            hf.on('change', () => {
+                                const state = hf.getState();
+                                if (state.cardInfo && state.cardInfo.type) {
+                                    this.selectedCardType(state.cardInfo.type);
+                                } else {
+                                    this.selectedCardType(null);
+                                }
+                            });
+
                             $('#' + this.getCode() + '_hosted_fields_form').show();
                         })
                         .catch((e) => {
                             console.error('Hosted fields initialization failed', e);
+                        })
+                        .finally(() => {
+                            fullScreenLoader.stopLoader();
                         });
                 }
 
@@ -123,16 +137,23 @@ define(
                 return false;
             },
             createThreeDSecureModal: function() {
-                const modal = document.createElement("div");
-                modal.id = "dna-payment-three-d-modal";
-                modal.className = "dna-payment-modal";
+                const modalId = 'dna-payment-three-d-modal';
+                const modalClassName = 'dna-payment-modal-content';
+                let modal = document.getElementById(modalId);
+                let modalContent = document.querySelector('#' + modalId + ' .' + modalClassName);
 
-                const modalContent = document.createElement("div");
-                modalContent.className = "dna-payment-modal-content";
+                if (!modal) {
+                    modal = document.createElement("div");
+                    modal.id = modalId;
+                    modal.className = "dna-payment-modal";
 
-                modal.appendChild(modalContent);
+                    modalContent = document.createElement("div");
+                    modalContent.className = "dna-payment-modal-content";
 
-                document.body.appendChild(modal);
+                    modal.appendChild(modalContent);
+
+                    document.body.appendChild(modal);
+                }
 
                 this.threeDModal = {
                     content: modalContent,
@@ -158,7 +179,7 @@ define(
                     accessToken,
                     styles: {
                         input: {
-                            'font-size': '14px',
+                            'font-size': '16px',
                             'font-family': 'Roboto'
                         },
                         '.invalid': {
@@ -184,7 +205,7 @@ define(
                         },
                         cvv: {
                             container: self._getElement('cc_cid'),
-                            placeholder: 'CSC/CVV'
+                            placeholder: '123'
                         }
                     }
                 };
@@ -278,6 +299,11 @@ define(
              */
             isVaultEnabled: function () {
                 return this.vaultEnabler.isVaultEnabled();
+            },
+            getIcons: function (type) {
+                return window.checkoutConfig.payment.dna_payment.icons.hasOwnProperty(type) ?
+                    window.checkoutConfig.payment.dna_payment.icons[type]
+                    : false;
             },
         });
     }

@@ -26,6 +26,7 @@ use Magento\Vault\Api\Data\PaymentTokenFactoryInterface;
 use Magento\Vault\Model\PaymentTokenManagement;
 use Dna\Payment\Helper\DnaLogger;
 use Magento\Framework\Event\ManagerInterface as EventManager;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 
 
 /**
@@ -82,6 +83,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $paymentTokenManagement;
     protected $dnaLogger;
     protected $eventManager;
+    protected $searchCriteriaBuilder;
 
     public function __construct(
         OrderRepositoryInterface        $orderRepository,
@@ -97,7 +99,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         EncryptorInterface              $encryptor,
         PaymentTokenManagement          $paymentTokenManagement,
         DnaLogger                       $dnaLogger,
-        EventManager                    $eventManager
+        EventManager                    $eventManager,
+        SearchCriteriaBuilder           $searchCriteriaBuilder
     )
     {
         $this->orderRepository = $orderRepository;
@@ -125,6 +128,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->paymentTokenManagement = $paymentTokenManagement;
         $this->dnaLogger = $dnaLogger;
         $this->eventManager = $eventManager;
+        $this->searchCriteriaBuilder = $searchCriteriaBuilder;
     }
 
     public function getAddress($address)
@@ -204,7 +208,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 'terminalId' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
                 'returnUrl' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
                 'failureReturnUrl' => $this->urlBuilder->getUrl('dna/result/failure'),
-                'callbackUrl' => $this->getUrl('rest/V1/dna-payment/confirm'),
+                // TODO: uncomment this line
+//                'callbackUrl' => $this->getUrl('rest/V1/dna-payment/confirm'),
+                'callbackUrl' => 'https://webhook.site/93defb17-f46a-4897-84d2-cfe7ceb5eff0',
                 'failureCallbackUrl' => $this->getUrl('rest/V1/dna-payment/failure'),
             ],
             'customerDetails' => [
@@ -733,14 +739,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     private function saveToken($customerId, $cardholderName, $cardTokenId, $cardSchemeId, $cardType, $maskedCC, $cardExpiryDate)
     {
         $lastFourDigits = substr($maskedCC, -4);
-
-        $paymentToken = $this->paymentTokenFactory->create(
-            PaymentTokenFactoryInterface::TOKEN_TYPE_CREDIT_CARD
-        );
-
-        $paymentToken->setCustomerId($customerId);
-        $paymentToken->setPaymentMethodCode(\Dna\Payment\Model\Config::PAYMENT_CODE);
-        $paymentToken->setTokenDetails($this->convertDetailsToJSON(
+        $tokenDetails = $this->convertDetailsToJSON(
             [
                 'type' => $this->getCardTypeCode($cardType),
                 'maskedCC' => $lastFourDigits,
@@ -750,12 +749,35 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 'panStar' => $maskedCC,
                 'cardholderName' => $cardholderName
             ]
-        ));
+        );
+        $publicHash = $this->generatePublicHash($customerId, PaymentTokenFactoryInterface::TOKEN_TYPE_CREDIT_CARD, $tokenDetails);
+
+        $searchCriteria = $this->searchCriteriaBuilder
+            ->addFilter('customer_id', $customerId)
+            ->addFilter('payment_method_code', \Dna\Payment\Model\Config::PAYMENT_CODE)
+            ->addFilter('public_hash', $publicHash)
+            ->create();
+
+        $paymentTokens = $this->paymentTokenRepository->getList($searchCriteria)->getItems();
+        $paymentToken = null;
+        if (!empty($paymentTokens) && count($paymentTokens) === 1) {
+            foreach ($paymentTokens as $token) {
+                $paymentToken = $token;
+            }
+        } else {
+            $paymentToken = $this->paymentTokenFactory->create(
+                PaymentTokenFactoryInterface::TOKEN_TYPE_CREDIT_CARD
+            );
+        }
+
+        $paymentToken->setCustomerId($customerId);
+        $paymentToken->setPaymentMethodCode(\Dna\Payment\Model\Config::PAYMENT_CODE);
+        $paymentToken->setTokenDetails($tokenDetails);
+        $paymentToken->setPublicHash($publicHash);
         $paymentToken->setExpiresAt($this->getExpirationDate($cardExpiryDate));
         $paymentToken->setGatewayToken($this->encryptor->encrypt($cardTokenId));
-
-        $publicHash = $this->generatePublicHash($customerId, $paymentToken->getType(), $paymentToken->getTokenDetails());
-        $paymentToken->setPublicHash($publicHash);
+        $paymentToken->setIsActive(true);
+        $paymentToken->setIsVisible(true);
 
         $this->paymentTokenRepository->save($paymentToken);
     }

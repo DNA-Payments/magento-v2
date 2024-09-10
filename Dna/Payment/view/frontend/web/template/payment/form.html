@@ -47,11 +47,17 @@
                     <label data-bind="attr: {for: getCode() + '_cc_number'}" class="label">
                         <span><!-- ko i18n: 'Credit Card Number'--><!-- /ko --></span>
                     </label>
-                    <div class="control">
-                        <div data-bind="attr: {id: getCode() + '_cc_number'}"
-                             class="hosted-control hosted-cc-number"></div>
-                        <div class="hosted-error"><!-- ko i18n: 'Please, enter valid Credit Card Number'-->
-                            <!-- /ko --></div>
+                    <div class="control dna-payment-card-control">
+                        <!-- ko if: !selectedCardType() -->
+                        <img data-bind="attr: {'src': getIcons('none').url}" class="dna-payment-credit-card-none-selected">
+                        <!--/ko-->
+                        <!-- ko if: selectedCardType() -->
+                        <img data-bind="attr: {'src': getIcons(selectedCardType()).url}" class="dna-payment-credit-card-selected">
+                        <!--/ko-->
+                        <div data-bind="attr: {id: getCode() + '_cc_number'}" class="hosted-control hosted-cc-number"></div>
+                        <div class="hosted-error">
+                            <!-- ko i18n: 'Please, enter valid Credit Card Number'--><!-- /ko -->
+                        </div>
                     </div>
                 </div>
 

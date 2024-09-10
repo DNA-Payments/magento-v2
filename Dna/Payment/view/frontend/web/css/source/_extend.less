@@ -15,6 +15,7 @@
     }
 
     .hosted-control {
+      background: #ffffff;
       border: 1px solid #c2c2c2;
       padding: 8px 15px;
       box-sizing: content-box;
@@ -33,11 +34,49 @@
       //&.hosted-cc-name {
       //  width: 16rem;
       //}
-      //&.hosted-cc-number {
-      //  width: 10rem;
-      //}
+      &.hosted-cc-number {
+        padding-left: 68px;
+      }
     }
 
+    .hosted-error {
+      clear: both;
+      color: #e02b27;
+      .lib-font-size(12px);
+      height: 0;
+      margin-top: 7px;
+      opacity: 0;
+    }
+  }
+}
+
+#payment-method-dna-payment-cc-vault {
+  .field {
+    &.required {
+      .label {
+        font-weight: @font-weight__semibold;
+        &:after {
+          content: '*';
+          color: #e02b27;
+          .lib-font-size(12px);
+          margin: 0 0 0 5px;
+        }
+      }
+    }
+    .hosted-control {
+      background: #ffffff;
+      border: 1px solid #c2c2c2;
+      padding: 8px 15px;
+      box-sizing: content-box;
+      height: 32px;
+      margin: 8px 0 0 0;
+      width: 4rem;
+
+      &.dna-payments-hosted-field-invalid:not(.dna-payments-hosted-field-focused) ~ .hosted-error {
+        height: auto;
+        opacity: 1;
+      }
+    }
     .hosted-error {
       clear: both;
       color: #e02b27;
@@ -70,4 +109,21 @@
   padding: 20px;
   border: 1px solid #888;
   width: 80%; /* Could be more or less, depending on screen size */
+}
+
+.dna-payment-card-control {
+  position: relative;
+}
+
+.dna-payment-credit-card-none-selected {
+  position: absolute;
+  z-index: 10;
+  left: 10px;
+}
+
+.dna-payment-credit-card-selected {
+  position: absolute;
+  z-index: 10;
+  left: 10px;
+  top: 10px;
 }

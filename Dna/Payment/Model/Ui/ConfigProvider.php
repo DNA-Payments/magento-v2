@@ -3,12 +3,15 @@
  * Copyright © 2016 Magento. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Dna\Payment\Model\Ui;
 
 use Dna\Payment\Gateway\Config\Config;
 use Magento\Checkout\Model\ConfigProviderInterface;
 use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\UrlInterface;
+use Magento\Payment\Model\CcConfig;
+use Magento\Framework\View\Asset\Source;
 
 /**
  * Class ConfigProvider
@@ -22,8 +25,10 @@ class ConfigProvider implements ConfigProviderInterface
 
     /**
      * @var Config
-    */
+     */
     private $config;
+    private $ccConfig;
+    private $assetSource;
 
     /**
      * @var SessionManagerInterface
@@ -34,15 +39,35 @@ class ConfigProvider implements ConfigProviderInterface
      * @var UrlInterface
      */
     protected $urlBuilder;
+    private $icons = [];
+    private $ccMapping = [
+        'american-express' => 'ae',
+        'discover' => 'di',
+        'diners-club' => 'dn',
+        'elo' => 'elo',
+        'hipercard' => 'hc',
+        'hiper' => 'hc',
+        'jcb' => 'jcb',
+        'mastercard' => 'mc',
+        'maestro' => 'sm',
+        'unionpay' => 'un',
+        'visa' => 'vi',
+        'none' => 'none',
+    ];
 
     public function __construct(
-        Config $config,
+        Config                  $config,
         SessionManagerInterface $session,
-        UrlInterface $urlBuilder
-    ) {
+        UrlInterface            $urlBuilder,
+        CcConfig                $ccConfig,
+        Source                  $assetSource
+    )
+    {
         $this->config = $config;
         $this->session = $session;
         $this->urlBuilder = $urlBuilder;
+        $this->ccConfig = $ccConfig;
+        $this->assetSource = $assetSource;
     }
 
     /**
@@ -61,8 +86,35 @@ class ConfigProvider implements ConfigProviderInterface
                     'isActive' => $this->config->isActive($storeId),
                     'integrationType' => $integrationType,
                     'ccVaultCode' => self::CC_VAULT_CODE,
+                    'icons' => $this->getIcons()
                 ]
             ]
         ];
+    }
+
+    public function getIcons(): array
+    {
+        if (!empty($this->icons)) {
+            return $this->icons;
+        }
+
+        foreach ($this->ccMapping as $cardType => $fileCode) {
+            if (!array_key_exists($cardType, $this->icons)) {
+                $asset = $this->ccConfig->createAsset('Dna_Payment::images/cc/' . $fileCode . '.png');
+                if ($asset) {
+                    $placeholder = $this->assetSource->findSource($asset);
+                    if ($placeholder) {
+                        list($width, $height) = getimagesize($asset->getSourceFile());
+                        $this->icons[$cardType] = [
+                            'url' => $asset->getUrl(),
+                            'width' => $width,
+                            'height' => $height
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $this->icons;
     }
 }
