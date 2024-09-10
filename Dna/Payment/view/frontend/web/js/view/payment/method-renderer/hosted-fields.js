@@ -15,7 +15,7 @@ define(
 
         return Component.extend({
             defaults: {
-                template: 'Dna_Payment/payment/form',
+                template: 'Dna_Payment/payment/form-hosted',
                 code: 'dna_payment',
                 hostedFieldsInstance: null,
                 orderId: null,
@@ -29,6 +29,12 @@ define(
 
                 this.vaultEnabler = new VaultEnabler();
                 this.vaultEnabler.setPaymentCode(this.getVaultCode());
+
+                if (this.hostedFieldsInstance) {
+                    this.hostedFieldsInstance.clear();
+                    this.hostedFieldsInstance.destroy();
+                    this.hostedFieldsInstance = null;
+                }
 
                 if (!this.hostedFieldsInstance) {
                     // Initialize hosted fields after the component is initialized
