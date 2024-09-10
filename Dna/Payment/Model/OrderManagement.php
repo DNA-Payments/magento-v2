@@ -208,9 +208,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 'terminalId' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
                 'returnUrl' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
                 'failureReturnUrl' => $this->urlBuilder->getUrl('dna/result/failure'),
-                // TODO: uncomment this line
-//                'callbackUrl' => $this->getUrl('rest/V1/dna-payment/confirm'),
-                'callbackUrl' => 'https://webhook.site/93defb17-f46a-4897-84d2-cfe7ceb5eff0',
+                'callbackUrl' => $this->getUrl('rest/V1/dna-payment/confirm'),
                 'failureCallbackUrl' => $this->getUrl('rest/V1/dna-payment/failure'),
             ],
             'customerDetails' => [
