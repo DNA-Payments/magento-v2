@@ -20,6 +20,39 @@
         </arguments>
     </virtualType>
 
+    <!-- Payment Method: Google Pay -->
+    <virtualType name="DnaPaymentGooglePayFacade" type="Magento\Payment\Model\Method\Adapter">
+        <arguments>
+            <argument name="code" xsi:type="const">Dna\Payment\Model\GooglePay\Ui\ConfigProvider::CODE</argument>
+            <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
+            <argument name="infoBlockType" xsi:type="string">Dna\Payment\Block\Info</argument>
+            <argument name="valueHandlerPool" xsi:type="object">DnaPaymentGooglePayValueHandlerPool</argument>
+            <argument name="commandPool" xsi:type="object">DnaPaymentCommandPool</argument> <!-- TODO: remove -->
+        </arguments>
+    </virtualType>
+    <type name="Dna\Payment\Model\GooglePay\Config">
+        <arguments>
+            <argument name="methodCode" xsi:type="const">Dna\Payment\Model\GooglePay\Ui\ConfigProvider::CODE</argument>
+        </arguments>
+    </type>
+    <virtualType name="DnaPaymentGooglePayValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="default" xsi:type="string">DnaPaymentGooglePayConfigValueHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="DnaPaymentGooglePayConfigValueHandler" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
+        <arguments>
+            <argument name="configInterface" xsi:type="object">DnaPaymentGooglePayConfig</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="DnaPaymentGooglePayConfig" type="Magento\Payment\Gateway\Config\Config">
+        <arguments>
+            <argument name="methodCode" xsi:type="string">Dna\Payment\Model\GooglePay\Ui\ConfigProvider::CODE</argument>
+        </arguments>
+    </virtualType>
+
     <!-- Configuration for Vault payments -->
     <virtualType name="DnaPaymentCreditCardVaultFacade" type="Magento\Vault\Model\Method\Vault">
         <arguments>

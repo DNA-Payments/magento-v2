@@ -36,6 +36,12 @@ interface OrderManagementInterface
     public function getOrderPaymentData($orderId);
 
     /**
+     * @param string $quoteId
+     * @return void
+     */
+    public function getQuotePaymentData($quoteId);
+
+    /**
      * @param string $invoiceId
      * @param string $id
      * @param string $amount

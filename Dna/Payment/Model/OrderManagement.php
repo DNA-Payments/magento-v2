@@ -12,6 +12,7 @@ use Dna\Payment\Model\Config as ModelConfig;
 use DNAPayments\DNAPayments;
 use DNAPayments\Util\RequestException;
 use Magento\Checkout\Model\Session;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
@@ -27,6 +28,11 @@ use Magento\Vault\Model\PaymentTokenManagement;
 use Dna\Payment\Helper\DnaLogger;
 use Magento\Framework\Event\ManagerInterface as EventManager;
 use Magento\Framework\Api\SearchCriteriaBuilder;
+use Magento\Customer\Model\Session as CustomerSession;
+use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Framework\Session\Generic as SessionManager;
+use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 
 
 /**
@@ -85,6 +91,13 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $eventManager;
     protected $searchCriteriaBuilder;
 
+    protected $sessionManager;
+    protected $quoteIdMaskFactory;
+    protected $cartRepository;
+    protected $customerSession;
+    protected $orderCollectionFactory;
+
+
     public function __construct(
         OrderRepositoryInterface        $orderRepository,
         OrderFactory                    $orderFactory,
@@ -100,7 +113,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         PaymentTokenManagement          $paymentTokenManagement,
         DnaLogger                       $dnaLogger,
         EventManager                    $eventManager,
-        SearchCriteriaBuilder           $searchCriteriaBuilder
+        SearchCriteriaBuilder           $searchCriteriaBuilder,
+        SessionManager                  $sessionManager,
+        QuoteIdMaskFactory              $quoteIdMaskFactory,
+        CartRepositoryInterface         $cartRepository,
+        CustomerSession                 $customerSession,
+        OrderCollectionFactory          $orderCollectionFactory
     )
     {
         $this->orderRepository = $orderRepository;
@@ -129,6 +147,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->dnaLogger = $dnaLogger;
         $this->eventManager = $eventManager;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
+        $this->sessionManager = $sessionManager;
+        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->cartRepository = $cartRepository;
+        $this->customerSession = $customerSession;
+        $this->orderCollectionFactory = $orderCollectionFactory;
     }
 
     public function getAddress($address)
@@ -323,6 +346,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * @return array
      * @throws Error
      * @throws RequestException
+     * @throws NoSuchEntityException
      */
     public function getOrderPaymentData($orderId)
     {
@@ -334,6 +358,165 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'isTestMode' => $this->isTestMode,
             'integrationType' => $this->config->getIntegrationType($this->storeId),
         ];
+    }
+
+    /**
+     * Get payment data for alternative payment methods, i.e. Google Pay / Apple Pay
+     * @return array
+     * @throws NoSuchEntityException
+     * @throws RequestException
+     */
+    public function getQuotePaymentData($quoteId)
+    {
+        $this->dnaLogger->info('maskedQuoteId', [
+            'quoteIdOrMaskedQuoteId' => $quoteId
+        ]);
+
+        if ($this->customerSession->isLoggedIn()) {
+            $this->dnaLogger->info('getGooglePayData is logged in');
+            $quote = $this->cartRepository->get($quoteId);
+        } else {
+            $this->dnaLogger->info('getGooglePayData not logged in');
+
+            $quoteIdMask = $this->quoteIdMaskFactory->create()->load($quoteId, 'masked_id');
+
+            $this->dnaLogger->info('quoteIdMask', [
+                'quoteIdMask' => $quoteIdMask,
+                'getQuoteId' => $quoteIdMask->getQuoteId()
+            ]);
+
+            $quote = $this->cartRepository->get($quoteIdMask->getQuoteId());
+        }
+
+        $this->dnaLogger->info('$quote', [
+            'quote' => $quote,
+        ]);
+
+        if (!$quote) {
+            throw new \Magento\Framework\Exception\NoSuchEntityException(__('Quote not found.'));
+        }
+
+        $client_id = $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId);
+        $order_id = $this->generateOrderId($client_id);
+
+        $this->dnaLogger->info('getGooglePayData', [
+            'quoteId' => $quote->getId(),
+            'quote' => $quote,
+            'order_id' => $order_id,
+            'reserve_order_id' => $quote->reserveOrderId(),
+            'get_reserved_order_id' => $quote->getReservedOrderId(),
+            'orig_order_id' => $quote->getOrigOrderId(),
+        ]);
+
+        $authData = $this->dnaPayment->auth(
+            [
+                'client_id' => $client_id,
+                'client_secret' => $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId),
+                'terminal' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
+                'invoiceId' => $order_id,
+                'currency' => $quote->getQuoteCurrencyCode(),
+                'amount' => floatval($quote->getGrandTotal())
+            ]
+        );
+
+        $response = [
+            'paymentData' => [
+                'invoiceId' => $order_id,
+                'description' => 'Pay with your credit card via our payment gateway.',
+                'amount' => floatval($quote->getGrandTotal()),
+                'currency' => $quote->getQuoteCurrencyCode(),
+                'paymentSettings' => [
+                    'terminalId' => $this->isTestMode ? $this->config->getTerminalIdTest($this->storeId) : $this->config->getTerminalId($this->storeId),
+                    'returnUrl' => $this->config->getBackLink($this->storeId) ? $this->urlBuilder->getUrl($this->config->getBackLink($this->storeId)) : $this->urlBuilder->getUrl('checkout/onepage/success'),
+                    'failureReturnUrl' => $this->urlBuilder->getUrl('dna/result/failure'),
+                    'callbackUrl' => 'https://webhook.site/0f360097-fcb5-4b21-aa77-d4efef04436b',
+//                    'callbackUrl' => $this->getUrl('rest/V1/dna-payment/confirm'),
+                    'failureCallbackUrl' => $this->getUrl('rest/V1/dna-payment/failure'),
+                ],
+                'customerDetails' => [
+                    'email' => $quote->getCustomerEmail(),
+                    'accountDetails' => [
+                        'accountId' => $quote->getCustomerId() ? $quote->getCustomerId() : '',
+                    ],
+                    'billingAddress' => [
+                        'firstName' => $quote->getBillingAddress()->getFirstname(),
+                        'lastName' => $quote->getBillingAddress()->getLastname(),
+                        'addressLine1' => join(" ", $quote->getBillingAddress()->getStreet()),
+                        'postalCode' => $quote->getBillingAddress()->getPostcode(),
+                        'city' => $quote->getBillingAddress()->getCity(),
+                        'region' => $quote->getBillingAddress()->getRegion(),
+                        'phone' => $quote->getBillingAddress()->getTelephone(),
+                        'country' => $quote->getBillingAddress()->getCountryId()
+                    ],
+                    'deliveryDetails' => [
+                        'deliveryAddress' => [
+                            'firstName' => $quote->getShippingAddress()->getFirstname(),
+                            'lastName' => $quote->getShippingAddress()->getLastname(),
+                            'addressLine1' => join(" ", $quote->getShippingAddress()->getStreet()),
+                            'postalCode' => $quote->getShippingAddress()->getPostcode(),
+                            'city' => $quote->getShippingAddress()->getCity(),
+                            'region' => $quote->getShippingAddress()->getRegion(),
+                            'phone' => $quote->getShippingAddress()->getTelephone(),
+                            'country' => $quote->getShippingAddress()->getCountryId(),
+                        ]
+                    ]
+                ],
+                'amountBreakdown' => [
+                    'itemTotal' => ['totalAmount' => round(floatval($quote->getSubtotal()), 2)],
+                    'shipping' => ['totalAmount' => round(floatval($quote->getShippingAddress()->getShippingInclTax()), 2)],
+                    // TODO: get tax
+//                    'taxTotal' => ['totalAmount' => floatval($quote->getTaxAmount() ? $quote->getTaxAmount() : 0)],
+                    // TODO: get discount
+//                    'discount' => ['totalAmount' => abs($quote->getDiscountAmount())]
+                ],
+                'orderLines' => [],
+                'merchantCustomData' => $this->convertDetailsToJSON([
+                    'quoteId' => $quote->getId()
+                ])
+            ],
+            'auth' => $authData,
+            'isTestMode' => $this->isTestMode,
+        ];
+
+        foreach ($quote->getAllVisibleItems() as $item) {
+            $product = $item->getProduct();
+
+            $response['paymentData']['orderLines'][] = [
+                'reference' => strval($item->getProductId()),
+                'name' => $item->getName(),
+                'quantity' => (int)$item->getQtyOrdered(),
+                'unitPrice' => round((float)$item->getPrice(), 2),
+                'imageUrl' => $product->getMediaConfig()->getMediaUrl($product->getImage()),
+                'productUrl' => $product->getProductUrl(),
+                'totalAmount' => round((float)$item->getRowTotal(), 2)
+            ];
+        }
+
+        $this->dnaLogger->info('getGooglePayData response', [
+            'response' => $response,
+        ]);
+
+        return $response;
+    }
+
+    /**
+     * Generate an alphanumeric, Base62-encoded, SHA-256 hash-based order ID
+     *
+     * @param string $client_id
+     * @return string
+     */
+    public function generateOrderId($client_id): string
+    {
+        $timestamp = microtime(true);
+        $randomNumber = rand(1000, 9999);
+        $dataToHash = $client_id . $timestamp . $randomNumber;
+
+        $hash = hash('sha256', $dataToHash, true);
+
+        $base64Hash = base64_encode($hash);
+        $base64Hash = str_replace(['+', '/', '='], '', $base64Hash);
+
+        return substr($base64Hash, 0, 16);
     }
 
     /**
@@ -399,7 +582,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
     private static function isDNAPaymentOrder(\Magento\Sales\Model\Order $order)
     {
-        return 'dna_payment' === $order->getPayment()->getMethodInstance()->getCode();
+        $paymentMethodCode = $order->getPayment()->getMethodInstance()->getCode();
+        return strpos($paymentMethodCode, 'dna_payment') === 0;
     }
 
     public static function isPendingPaymentOrder(\Magento\Sales\Model\Order $order)
@@ -409,7 +593,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
     public static function isClosedPaymentOrder(\Magento\Sales\Model\Order $order)
     {
-        return $order->getState() == $order::STATE_CLOSED || $order->getState() == $order::STATE_COMPLETE;
+        return $order->getState() == $order::STATE_CLOSED
+            || $order->getState() == $order::STATE_COMPLETE
+            || $order->getState() == $order::STATE_PROCESSING;
     }
 
     private function savePayPalOrderDetail(\Magento\Sales\Model\Order $order, $input, $isAddOrderNode)
@@ -542,27 +728,49 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $merchantCustomData = null
     )
     {
-        $order = Helpers::getOrderInfo($invoiceId);
+        $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
+        $isValidSignature = $this->dnaPayment->isValidSignature([
+            'id' => $id,
+            'amount' => $amount,
+            'currency' => $currency,
+            'invoiceId' => $invoiceId,
+            'errorCode' => $errorCode,
+            'success' => $success,
+            'signature' => $signature
+        ], $secret);
+
+        if ($paymentMethod == "googlepay") {
+            $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
+
+            if (!isset($merchantCustomDataJson['quoteId'])) {
+                throw new \Exception('No quoteId found with merchantCustomData');
+            }
+
+            $quoteId = $merchantCustomDataJson['quoteId'];
+
+            $orderCollection = $this->orderCollectionFactory->create()
+                ->addFieldToFilter('quote_id', $quoteId);
+            $order = $orderCollection->getFirstItem();
+
+            if (!$order || !$order->getId()) {
+                throw new \Exception('No order found with quote ID: ' . $quoteId);
+            }
+
+            $invoiceId = $order->getIncrementId();
+        } else {
+            $order = Helpers::getOrderInfo($invoiceId);
+        }
 
         if (!$this->isDNAPaymentOrder($order)) {
             return;
         }
-        $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
 
-        if ($this->dnaPayment->isValidSignature([
-                'id' => $id,
-                'amount' => $amount,
-                'currency' => $currency,
-                'invoiceId' => $invoiceId,
-                'errorCode' => $errorCode,
-                'success' => $success,
-                'signature' => $signature
-            ], $secret) && $success) {
+        if ($isValidSignature && $success) {
             try {
                 $orderPayment = $order->getPayment();
                 $isCompletedOrder = $this->isClosedPaymentOrder($order);
-                
-                if (!$isCompletedOrder){
+
+                if (!$isCompletedOrder) {
                     $this->setOrderStatus($invoiceId, Order::STATE_PENDING_PAYMENT);
                     $order = Helpers::getOrderInfo($invoiceId);
 
@@ -702,7 +910,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
             if (!$isCompletedOrder) {
                 $order->addStatusHistoryComment("Your payment with DNA Payment is failed. Transaction #$id");
-                
+
                 $orderPayment
                     ->setTransactionId($id)
                     ->addTransaction(\Magento\Sales\Model\Order\Payment\Transaction::TYPE_CAPTURE, null, true)

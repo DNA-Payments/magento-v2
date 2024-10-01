@@ -10,6 +10,7 @@
         <arguments>
             <argument name="configProviders" xsi:type="array">
                 <item name="dna_payment" xsi:type="object">Dna\Payment\Model\Ui\ConfigProvider</item>
+                <item name="dna_payment_googlepay_config_provider" xsi:type="object">Dna\Payment\Model\GooglePay\Ui\ConfigProvider</item>
             </argument>
         </arguments>
     </type>

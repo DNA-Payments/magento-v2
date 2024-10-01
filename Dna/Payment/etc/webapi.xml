@@ -24,6 +24,12 @@
             <resource ref="anonymous" />
         </resources>
     </route>
+    <route url="/V1/dna-payment/get-quote-payment-data" method="GET">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="getQuotePaymentData"/>
+        <resources>
+            <resource ref="anonymous" />
+        </resources>
+    </route>
     <route url="/V1/dna-payment/get-dna-dumb-auth-data" method="GET">
         <service class="Dna\Payment\Api\OrderManagementInterface" method="getDnaDumbAuthData"/>
         <resources>
