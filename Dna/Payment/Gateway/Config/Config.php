@@ -3,6 +3,7 @@
 namespace Dna\Payment\Gateway\Config;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Store\Model\ScopeInterface;
 
 class Config extends \Magento\Payment\Gateway\Config\Config
 {
@@ -23,6 +24,8 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     const KEY_ORDER_SUCCESS_STATUS = 'order_status_success';
     const KEY_INTEGRATION_TYPE = 'integration_type';
 
+    protected $scopeConfig;
+
     /**
      * DNA config constructor
      *
@@ -36,6 +39,8 @@ class Config extends \Magento\Payment\Gateway\Config\Config
         string $pathPattern = self::DEFAULT_PATH_PATTERN
     ) {
         parent::__construct($scopeConfig, $methodCode, $pathPattern);
+
+        $this->scopeConfig = $scopeConfig;
     }
 
     public function isActive($storeId = null)
@@ -100,5 +105,15 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     public function getOrderSuccessStatus($storeId = null)
     {
         return $this->getValue(Config::KEY_ORDER_SUCCESS_STATUS, $storeId);
+    }
+
+    public function isVaultEnabled()
+    {
+        $isVaultEnabled = $this->scopeConfig->getValue(
+            'payment/dna_payment_cc_vault/active',
+            ScopeInterface::SCOPE_STORE
+        );
+
+        return (bool)$isVaultEnabled;
     }
 }

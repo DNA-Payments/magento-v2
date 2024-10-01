@@ -20,5 +20,10 @@
             <source_model>Dna\Payment\Model\PaymentIntegrationTypes</source_model>
             <attribute type="shared">1</attribute>
         </field>
+        <field id="dna_payment_cc_vault_active" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Enable Vault for Card Payments</label>
+            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+            <config_path>payment/dna_payment_cc_vault/active</config_path>
+        </field>
     </group>
 </config>

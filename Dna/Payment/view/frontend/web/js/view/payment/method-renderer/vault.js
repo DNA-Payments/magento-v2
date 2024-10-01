@@ -32,6 +32,8 @@ define([
         initialize: function () {
             this._super();
 
+            console.log('initilize saved cards');
+
             return this;
         },
 
@@ -133,6 +135,9 @@ define([
             var active = this.getId() === this.isChecked();
             this.active(active);
             return active;
+        },
+        isVaultEnabled: function () {
+            return window.checkoutConfig.payment.dna_payment.integrationType === '2';
         },
         /**
          * @returns {exports}

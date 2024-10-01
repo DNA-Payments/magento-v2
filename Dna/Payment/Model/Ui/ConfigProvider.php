@@ -84,6 +84,7 @@ class ConfigProvider implements ConfigProviderInterface
             'payment' => [
                 self::CODE => [
                     'isActive' => $this->config->isActive($storeId),
+                    'isVaultEnabled' => $this->config->isVaultEnabled(),
                     'integrationType' => $integrationType,
                     'ccVaultCode' => self::CC_VAULT_CODE,
                     'icons' => $this->getIcons()

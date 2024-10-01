@@ -96,9 +96,12 @@ define(
                                         const {paymentData, accessToken} = response;
 
                                         try {
-                                            paymentData.merchantCustomData = JSON.stringify({
-                                                storeCardOnFile: $('#' + self.getCode() + '_enable_vault').prop('checked')
-                                            });
+                                            if (self.isVaultEnabled()) {
+                                                paymentData.merchantCustomData = JSON.stringify({
+                                                    storeCardOnFile: $('#' + self.getCode() + '_enable_vault').prop('checked')
+                                                });
+                                            }
+
                                             await self.hostedFieldsInstance.submit({
                                                 paymentData: paymentData,
                                                 token: accessToken
@@ -304,7 +307,7 @@ define(
              * @returns {Bool}
              */
             isVaultEnabled: function () {
-                return this.vaultEnabler.isVaultEnabled();
+                return this.vaultEnabler.isVaultEnabled() && window.checkoutConfig.payment.dna_payment.isVaultEnabled;
             },
             getIcons: function (type) {
                 return window.checkoutConfig.payment.dna_payment.icons.hasOwnProperty(type) ?

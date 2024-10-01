@@ -49,11 +49,13 @@ define(
                         })()
 
                         paymentData.auth = auth;
+
                         const isCustomerAuthenticated = Boolean(paymentData.customerDetails.accountDetails.accountId)
+                        const allowSavingCards = isCustomerAuthenticated && self.isVaultEnabled();
 
                         window.DNAPayments.configure({
                             isTestMode,
-                            allowSavingCards: isCustomerAuthenticated,
+                            allowSavingCards: allowSavingCards,
                             cards: isCustomerAuthenticated ? savedCards : [],
                             events: {
                                 cancelled: () => {
@@ -102,6 +104,9 @@ define(
             getEmail: function () {
                 if (quote.guestEmail) return quote.guestEmail;
                 else return window.checkoutConfig.customerData.email;
+            },
+            isVaultEnabled: function () {
+                return window.checkoutConfig.payment.dna_payment.isVaultEnabled;
             },
             validate() {
                 const {

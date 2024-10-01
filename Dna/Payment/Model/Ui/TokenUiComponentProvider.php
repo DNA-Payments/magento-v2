@@ -2,7 +2,6 @@
 
 namespace Dna\Payment\Model\Ui;
 
-use Dna\Payment\Helper\DnaLogger;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Vault\Api\Data\PaymentTokenInterface;
 use Magento\Vault\Model\Ui\TokenUiComponentInterface;
@@ -11,18 +10,25 @@ use Magento\Vault\Model\Ui\TokenUiComponentInterfaceFactory;
 
 class TokenUiComponentProvider implements TokenUiComponentProviderInterface
 {
+    /**
+     * @var TokenUiComponentInterfaceFactory
+     */
     private $componentFactory;
-    protected $dnaLogger;
+    /**
+     * @var EncryptorInterface
+     */
     protected $encryptor;
 
+    /**
+     * @param TokenUiComponentInterfaceFactory $componentFactory
+     * @param EncryptorInterface $encryptor
+     */
     public function __construct(
-        DnaLogger $dnaLogger,
         TokenUiComponentInterfaceFactory $componentFactory,
-        EncryptorInterface              $encryptor
+        EncryptorInterface $encryptor
     )
     {
         $this->componentFactory = $componentFactory;
-        $this->dnaLogger = $dnaLogger;
         $this->encryptor = $encryptor;
     }
 
@@ -47,10 +53,6 @@ class TokenUiComponentProvider implements TokenUiComponentProviderInterface
                 'name' => 'Dna_Payment/js/view/payment/method-renderer/vault'
             ]
         );
-
-        $this->dnaLogger->info('getComponentForToken', [
-            'component' => $component,
-        ]);
 
         return $component;
     }
