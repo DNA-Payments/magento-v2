@@ -56,7 +56,7 @@ define(
                         window.DNAPayments.configure({
                             isTestMode,
                             allowSavingCards: allowSavingCards,
-                            cards: isCustomerAuthenticated ? savedCards : [],
+                            cards: allowSavingCards ? savedCards : [],
                             events: {
                                 cancelled: () => {
                                     fullScreenLoader.startLoader();
