@@ -373,10 +373,10 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         ]);
 
         if ($this->customerSession->isLoggedIn()) {
-            $this->dnaLogger->info('getGooglePayData is logged in');
+            $this->dnaLogger->info('getQuotePaymentData is logged in');
             $quote = $this->cartRepository->get($quoteId);
         } else {
-            $this->dnaLogger->info('getGooglePayData not logged in');
+            $this->dnaLogger->info('getQuotePaymentData not logged in');
 
             $quoteIdMask = $this->quoteIdMaskFactory->create()->load($quoteId, 'masked_id');
 
@@ -399,7 +399,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $client_id = $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId);
         $order_id = $this->generateOrderId($client_id);
 
-        $this->dnaLogger->info('getGooglePayData', [
+        $this->dnaLogger->info('getQuotePaymentData', [
             'quoteId' => $quote->getId(),
             'quote' => $quote,
             'order_id' => $order_id,
@@ -491,7 +491,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ];
         }
 
-        $this->dnaLogger->info('getGooglePayData response', [
+        $this->dnaLogger->info('getQuotePaymentData response', [
             'response' => $response,
         ]);
 
