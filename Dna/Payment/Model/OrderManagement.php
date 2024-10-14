@@ -738,7 +738,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'signature' => $signature
         ], $secret);
 
-        if ($paymentMethod == "googlepay") {
+        if ($paymentMethod == "googlepay" || $paymentMethod == "applepay") {
             $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
 
             if (!isset($merchantCustomDataJson['quoteId'])) {
