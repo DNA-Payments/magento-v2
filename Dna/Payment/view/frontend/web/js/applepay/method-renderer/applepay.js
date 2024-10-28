@@ -60,9 +60,10 @@ define(
                                         let message = err.message ||
                                             $t('Your card has not been authorised, please check the details and retry or contact your bank.');
 
-                                        if (err.code === 1002 || err.code === 1003) {
-                                            message = $t('Apple Pay payments are not supported in your current browser.');
-                                        }
+                                        // TODO: show this error inside method renderer
+                                        // if (err.code === 1002 || err.code === 1003) {
+                                        //     message = $t('Apple Pay payments are not supported in your current browser.');
+                                        // }
 
                                         self.showError(message);
 

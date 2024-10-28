@@ -1,16 +1,22 @@
 <?php
 
-namespace Dna\Payment\Model;
+namespace Dna\Payment\Model\ApplePay;
 
 use Dna\Payment\Gateway\Config\Config;
+use Dna\Payment\Model\CartFactory;
+use Dna\Payment\Model\Helpers;
+use Dna\Payment\Model\Magento;
+use Dna\Payment\Model\Transaction;
 use DNAPayments\DNAPayments;
+use Magento\Framework\App\State;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Payment;
+use function Dna\Payment\Model\__;
 
-class GooglePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
+class ApplePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
 {
-    protected $_code = 'dna_payment_googlepay';
+    protected $_code = 'dna_payment_applepay';
 
     /**
      * @var string
@@ -170,6 +176,7 @@ class GooglePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMetho
      * @var \Magento\Framework\Session\SessionManagerInterface
      */
     private $session;
+    private $appState;
 
     /**
      * @param \Magento\Framework\Model\Context $context
@@ -195,6 +202,7 @@ class GooglePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMetho
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
+        State $appState,
         \Magento\Framework\Model\Context $context,
         \Magento\Framework\Registry $registry,
         \Magento\Framework\Api\ExtensionAttributesFactory $extensionFactory,
@@ -215,6 +223,8 @@ class GooglePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMetho
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
+        $this->appState = $appState;
+
         parent::__construct(
             $context,
             $registry,
@@ -422,5 +432,14 @@ class GooglePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMetho
             $order->save();
         }
         return $this;
+    }
+
+    public function isAvailable(\Magento\Quote\Api\Data\CartInterface $quote = null)
+    {
+        // Check if current area is adminhtml
+        if ($this->appState->getAreaCode() === \Magento\Framework\App\Area::AREA_ADMINHTML) {
+            return false;
+        }
+        return parent::isAvailable($quote);
     }
 }

@@ -39,7 +39,7 @@
                 <group>dna_payment_group</group>
             </dna_payment_cc_vault>
             <dna_payment_googlepay>
-                <model>Dna\Payment\Model\GooglePayPaymentMethod</model>
+                <model>Dna\Payment\Model\GooglePay\GooglePayPaymentMethod</model>
                 <title>Google Pay</title>
                 <active>1</active>
                 <payment_action>authorize_capture</payment_action>
@@ -65,7 +65,7 @@
             </dna_payment_googlepay>
 
             <dna_payment_applepay>
-                <model>Dna\Payment\Model\ApplePayPaymentMethod</model>
+                <model>Dna\Payment\Model\ApplePay\ApplePayPaymentMethod</model>
                 <title>Apple Pay</title>
                 <active>1</active>
                 <payment_action>authorize_capture</payment_action>
