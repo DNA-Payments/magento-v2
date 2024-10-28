@@ -4,7 +4,8 @@
  * See COPYING.txt for license details.
  */
 -->
-<div class="payment-method" data-bind="css: {'_active': (getCode() == isChecked())}" id="payment-method-dna-payment-applepay">
+<div class="payment-method" data-bind="css: {'_active': (getCode() == isChecked())}"
+     id="payment-method-dna-payment-applepay">
     <div class="payment-method-title field choice">
         <input type="radio"
                name="payment[method]"
@@ -30,6 +31,12 @@
             <!--/ko-->
         </div>
         <div class="actions-toolbar">
+            <div id="dna_payment_applepay_warning" class="dna-payment-apple-pay-warning" style="display: none;">
+                <p class="dna-payment-apple-pay-warning-text">
+                    <span data-bind="i18n: 'Apple Pay payments are not supported in your current browser. Please use Safari on a compatible Apple device to complete your transaction.'"></span>
+                </p>
+            </div>
+
             <div id="dna_payment_applepay_container"></div>
         </div>
     </div>

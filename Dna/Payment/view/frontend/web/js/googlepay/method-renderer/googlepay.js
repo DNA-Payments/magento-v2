@@ -41,21 +41,18 @@ define(
                                 paymentData,
                                 {
                                     onClick: () => {
-                                        console.log('googlepay onClick');
                                         fullScreenLoader.startLoader();
                                     },
                                     onPaymentSuccess: (result) => {
-                                        console.log('googlepay onPaymentSuccess result', JSON.stringify(result));
-
                                         fullScreenLoader.stopLoader();
                                         self.placeOrder();
                                     },
                                     onCancel: () => {
-                                        console.log('googlepay onCancel');
+                                        console.log('GooglePayComponent is cancelled');
                                         fullScreenLoader.stopLoader();
                                     },
                                     onError: (err) => {
-                                        console.log('googlepay onError', err);
+                                        console.log('GooglePayComponent error', err);
 
                                         let message = err.message ||
                                             $t('Your card has not been authorised, please check the details and retry or contact your bank.');
@@ -69,7 +66,7 @@ define(
                                         fullScreenLoader.stopLoader();
                                     },
                                     onLoad: () => {
-                                        console.log('googlepay onLoad');
+                                        console.log('GooglePayComponent is loaded');
 
                                         fullScreenLoader.stopLoader();
                                     },

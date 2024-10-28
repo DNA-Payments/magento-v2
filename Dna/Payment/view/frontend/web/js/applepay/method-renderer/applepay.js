@@ -41,36 +41,32 @@ define(
                                 paymentData,
                                 {
                                     onClick: () => {
-                                        console.log('applepay onClick');
                                         fullScreenLoader.startLoader();
                                     },
                                     onPaymentSuccess: (result) => {
-                                        console.log('applepay onPaymentSuccess result', JSON.stringify(result));
-
                                         fullScreenLoader.stopLoader();
                                         self.placeOrder();
                                     },
                                     onCancel: () => {
-                                        console.log('applepay onCancel');
+                                        console.log('ApplePayComponent is cancelled');
                                         fullScreenLoader.stopLoader();
                                     },
                                     onError: (err) => {
-                                        console.log('applepay onError', err);
+                                        console.log('ApplePayComponent error', err);
 
                                         let message = err.message ||
                                             $t('Your card has not been authorised, please check the details and retry or contact your bank.');
 
-                                        // TODO: show this error inside method renderer
-                                        // if (err.code === 1002 || err.code === 1003) {
-                                        //     message = $t('Apple Pay payments are not supported in your current browser.');
-                                        // }
+                                        if (err.code === 1002 || err.code === 1003) {
+                                            $('#dna_payment_applepay_warning').show();
+                                        }
 
                                         self.showError(message);
 
                                         fullScreenLoader.stopLoader();
                                     },
                                     onLoad: () => {
-                                        console.log('applepay onLoad');
+                                        console.log('ApplePayComponent is loaded');
 
                                         fullScreenLoader.stopLoader();
                                     },

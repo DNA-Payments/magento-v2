@@ -18,10 +18,7 @@ define(
         let config = window.checkoutConfig.payment;
         let dnaPaymentType = 'dna_payment_googlepay';
 
-        console.log('googlepay window.checkoutConfig', window.checkoutConfig);
-
         if (config[dnaPaymentType] && config[dnaPaymentType].isActive) {
-            console.log('Google Pay integration type is active');
             rendererList.push(
                 {
                     type: dnaPaymentType,

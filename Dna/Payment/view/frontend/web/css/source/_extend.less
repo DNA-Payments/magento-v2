@@ -1,10 +1,11 @@
 #dna_payment_hosted_fields_form {
-
   .field {
     margin: 0 0 20px 0;
+
     &.required {
       .label {
         font-weight: @font-weight__semibold;
+
         &:after {
           content: '*';
           color: #e02b27;
@@ -21,19 +22,12 @@
       box-sizing: content-box;
       height: 32px;
       margin: 8px 0 0 0;
+
       &.dna-payments-hosted-field-invalid:not(.dna-payments-hosted-field-focused) ~ .hosted-error {
         height: auto;
         opacity: 1;
       }
-      //&.hosted-cc-cid {
-      //  width: 6rem;
-      //}
-      //&.hosted-cc-exp-date {
-      //  width: 5rem;
-      //}
-      //&.hosted-cc-name {
-      //  width: 16rem;
-      //}
+
       &.hosted-cc-number {
         padding-left: 68px;
       }
@@ -55,6 +49,7 @@
     &.required {
       .label {
         font-weight: @font-weight__semibold;
+
         &:after {
           content: '*';
           color: #e02b27;
@@ -63,6 +58,7 @@
         }
       }
     }
+
     .hosted-control {
       background: #ffffff;
       border: 1px solid #c2c2c2;
@@ -77,6 +73,7 @@
         opacity: 1;
       }
     }
+
     .hosted-error {
       clear: both;
       color: #e02b27;
@@ -97,8 +94,8 @@
   height: 100%;
   width: 100%;
   overflow: auto;
-  background-color: rgb(0,0,0);
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 .dna-payment-modal-content {
@@ -124,4 +121,17 @@
   z-index: 10;
   left: 10px;
   top: 10px;
+}
+
+.dna-payment-apple-pay-warning {
+  background-color: #fdeded;
+  border: 1px solid #d9534f;
+  border-radius: 4px;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.dna-payment-apple-pay-warning-text {
+  font-size: 16px;
+  font-weight: normal;
 }
