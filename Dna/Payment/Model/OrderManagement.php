@@ -780,6 +780,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                         ->save();
 
                     $orderPayment->setAdditionalInformation('id', $id);
+                    $orderPayment->setAdditionalInformation('invoiceId', $invoiceId);
                     $orderPayment->setAdditionalInformation('rrn', $rrn);
                     $orderPayment->setAdditionalInformation('message', $message);
                     $orderPayment->setAdditionalInformation('paymentMethod', $paymentMethod);
