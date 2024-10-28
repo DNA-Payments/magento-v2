@@ -59,9 +59,9 @@ define(
 
                                         if (err.code === 1002 || err.code === 1003) {
                                             $('#dna_payment_applepay_warning').show();
+                                        } else {
+                                            self.showError(message);
                                         }
-
-                                        self.showError(message);
 
                                         fullScreenLoader.stopLoader();
                                     },
