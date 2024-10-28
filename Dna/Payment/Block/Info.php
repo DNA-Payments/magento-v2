@@ -44,9 +44,9 @@ class Info extends \Magento\Payment\Block\Info
         $additionalInfo = $info->getAdditionalInformation();
         $paymentData = isset($additionalInfo['paymentResponse']) ? $additionalInfo['paymentResponse'] : $additionalInfo;
 
-        if (isset($paymentData['invoiceId'])) {
+        if (isset($paymentData['dnaOrderNumber'])) {
             $title = __('DNA Payments order number');
-            $data[$title->__toString()] = $paymentData['invoiceId'];
+            $data[$title->__toString()] = $paymentData['dnaOrderNumber'];
         }
 
         if (isset($paymentData['id'])) {

@@ -738,6 +738,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'signature' => $signature
         ], $secret);
 
+        $dna_order_number = $invoiceId;
         if ($paymentMethod == "googlepay" || $paymentMethod == "applepay") {
             $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
 
@@ -780,7 +781,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                         ->save();
 
                     $orderPayment->setAdditionalInformation('id', $id);
-                    $orderPayment->setAdditionalInformation('invoiceId', $invoiceId);
+                    $orderPayment->setAdditionalInformation('dnaOrderNumber', $dna_order_number);
                     $orderPayment->setAdditionalInformation('rrn', $rrn);
                     $orderPayment->setAdditionalInformation('message', $message);
                     $orderPayment->setAdditionalInformation('paymentMethod', $paymentMethod);
