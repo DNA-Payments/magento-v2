@@ -491,6 +491,11 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ];
         }
 
+        $paymentAction = $this->config->getPaymentAction($this->storeId);
+        if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
+            $response['paymentData']['transactionType'] = ModelConfig::getTransactionType($paymentAction);
+        }
+
         $this->dnaLogger->info('getQuotePaymentData response', [
             'response' => $response,
         ]);
