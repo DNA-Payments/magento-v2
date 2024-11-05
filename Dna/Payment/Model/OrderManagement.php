@@ -368,29 +368,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      */
     public function getQuotePaymentData($quoteId)
     {
-        $this->dnaLogger->info('maskedQuoteId', [
-            'quoteIdOrMaskedQuoteId' => $quoteId
-        ]);
-
         if ($this->customerSession->isLoggedIn()) {
-            $this->dnaLogger->info('getQuotePaymentData is logged in');
             $quote = $this->cartRepository->get($quoteId);
         } else {
-            $this->dnaLogger->info('getQuotePaymentData not logged in');
-
             $quoteIdMask = $this->quoteIdMaskFactory->create()->load($quoteId, 'masked_id');
-
-            $this->dnaLogger->info('quoteIdMask', [
-                'quoteIdMask' => $quoteIdMask,
-                'getQuoteId' => $quoteIdMask->getQuoteId()
-            ]);
-
             $quote = $this->cartRepository->get($quoteIdMask->getQuoteId());
         }
-
-        $this->dnaLogger->info('$quote', [
-            'quote' => $quote,
-        ]);
 
         if (!$quote) {
             throw new \Magento\Framework\Exception\NoSuchEntityException(__('Quote not found.'));
@@ -398,15 +381,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         $client_id = $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId);
         $order_id = $this->generateOrderId($client_id);
-
-        $this->dnaLogger->info('getQuotePaymentData', [
-            'quoteId' => $quote->getId(),
-            'quote' => $quote,
-            'order_id' => $order_id,
-            'reserve_order_id' => $quote->reserveOrderId(),
-            'get_reserved_order_id' => $quote->getReservedOrderId(),
-            'orig_order_id' => $quote->getOrigOrderId(),
-        ]);
 
         $authData = $this->dnaPayment->auth(
             [
@@ -495,10 +469,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
             $response['paymentData']['transactionType'] = ModelConfig::getTransactionType($paymentAction);
         }
-
-        $this->dnaLogger->info('getQuotePaymentData response', [
-            'response' => $response,
-        ]);
 
         return $response;
     }
