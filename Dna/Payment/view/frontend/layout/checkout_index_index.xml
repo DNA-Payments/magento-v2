@@ -50,6 +50,14 @@
                                                                         </item>
                                                                     </item>
                                                                 </item>
+                                                                <item name="dna_payment_alipay_plus" xsi:type="array">
+                                                                    <item name="component" xsi:type="string">Dna_Payment/js/alipay/alipay-method</item>
+                                                                    <item name="methods" xsi:type="array">
+                                                                        <item name="dna_payment_alipay_plus" xsi:type="array">
+                                                                            <item name="isBillingAddressRequired" xsi:type="boolean">true</item>
+                                                                        </item>
+                                                                    </item>
+                                                                </item>
                                                             </item>
                                                         </item>
                                                     </item>

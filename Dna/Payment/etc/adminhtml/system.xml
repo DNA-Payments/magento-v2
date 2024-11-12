@@ -5,6 +5,11 @@
         <section id="payment">
             <group id="main" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>DNA Payments</label>
+                <field id="dna_payment_alipay_plus_active" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Alipay</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>payment/dna_payment_alipay_plus/active</config_path>
+                </field>
                 <include path="Dna_Payment::system/credentials.xml"/>
                 <include path="Dna_Payment::system/test.xml"/>
                 <include path="Dna_Payment::system/order_management.xml"/>
