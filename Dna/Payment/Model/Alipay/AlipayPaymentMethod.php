@@ -1,6 +1,6 @@
 <?php
 
-namespace Dna\Payment\Model\GooglePay;
+namespace Dna\Payment\Model\Alipay;
 
 use Dna\Payment\Gateway\Config\Config;
 use Dna\Payment\Model\Helpers;
@@ -10,9 +10,9 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Payment;
 
-class GooglePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
+class AlipayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
 {
-    protected $_code = 'dna_payment_googlepay';
+    protected $_code = 'dna_payment_alipay_plus';
 
     /**
      * @var string
@@ -172,7 +172,6 @@ class GooglePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMetho
      * @var \Magento\Framework\Session\SessionManagerInterface
      */
     private $session;
-
     private $appState;
 
     /**
