@@ -3,16 +3,12 @@
 namespace Dna\Payment\Model\ApplePay;
 
 use Dna\Payment\Gateway\Config\Config;
-use Dna\Payment\Model\CartFactory;
 use Dna\Payment\Model\Helpers;
-use Dna\Payment\Model\Magento;
-use Dna\Payment\Model\Transaction;
 use DNAPayments\DNAPayments;
 use Magento\Framework\App\State;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Payment;
-use function Dna\Payment\Model\__;
 
 class ApplePayPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
 {

@@ -23,18 +23,14 @@ define(
                 initialize: function () {
                     this._super();
 
-                    console.log('Apple Pay method renderer initializing');
-
                     let self = this;
-                    fullScreenLoader.startLoader();
                     let quoteId = quote.getQuoteId();
-                    console.log('quote id', quoteId);
+
+                    fullScreenLoader.startLoader();
 
                     self.fetchQuotePaymentData(quoteId)
                         .then(async function (response) {
                             const {paymentData, accessToken} = response;
-
-                            console.log('Fetched payment data', response);
 
                             window.DNAPayments.ApplePayComponent.create(
                                 $('#dna_payment_applepay_container')[0],
@@ -49,6 +45,7 @@ define(
                                     },
                                     onCancel: () => {
                                         console.log('ApplePayComponent is cancelled');
+
                                         fullScreenLoader.stopLoader();
                                     },
                                     onError: (err) => {

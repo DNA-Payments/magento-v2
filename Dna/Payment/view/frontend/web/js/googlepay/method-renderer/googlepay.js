@@ -23,18 +23,14 @@ define(
                 initialize: function () {
                     this._super();
 
-                    console.log('Google Pay method renderer initializing');
-
                     let self = this;
-                    fullScreenLoader.startLoader();
                     let quoteId = quote.getQuoteId();
-                    console.log('quote id', quoteId);
+
+                    fullScreenLoader.startLoader();
 
                     self.fetchQuotePaymentData(quoteId)
                         .then(async function (response) {
                             const {paymentData, accessToken} = response;
-
-                            console.log('Fetched payment data', response);
 
                             window.DNAPayments.GooglePayComponent.create(
                                 $('#dna_payment_googlepay_container'),
@@ -45,10 +41,12 @@ define(
                                     },
                                     onPaymentSuccess: (result) => {
                                         fullScreenLoader.stopLoader();
+
                                         self.placeOrder();
                                     },
                                     onCancel: () => {
                                         console.log('GooglePayComponent is cancelled');
+
                                         fullScreenLoader.stopLoader();
                                     },
                                     onError: (err) => {
