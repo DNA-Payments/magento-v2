@@ -1,26 +1,26 @@
 <?xml version="1.0"?>
 
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
-    <group id="dna_payment_order_management" translate="label" type="text" sortOrder="500" showInDefault="1" showInWebsite="1" showInStore="1">
+    <group id="dna_payment_order_management" translate="label" type="text" sortOrder="300" showInDefault="1" showInWebsite="1" showInStore="1">
         <label>Order Management</label>
-        <field id="order_status_success" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
-            <label>Order status when payment is success</label>
-            <source_model>Dna\Payment\Model\Status</source_model>
-            <config_path>payment/dna_payment/order_status_success</config_path>
-        </field>
-        <field id="payment_action" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1">
+        <field id="payment_action" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1">
             <label>Payment Action</label>
             <config_path>payment/dna_payment/payment_action</config_path>
             <source_model>Dna\Payment\Model\PaymentActions</source_model>
             <attribute type="shared">1</attribute>
         </field>
-        <field id="integration_type" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1">
+        <field id="order_status_success" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+            <label>Order status when payment is success</label>
+            <source_model>Dna\Payment\Model\Status</source_model>
+            <config_path>payment/dna_payment/order_status_success</config_path>
+        </field>
+        <field id="integration_type" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1">
             <label>Payment form integration type</label>
             <config_path>payment/dna_payment/integration_type</config_path>
             <source_model>Dna\Payment\Model\PaymentIntegrationTypes</source_model>
             <attribute type="shared">1</attribute>
         </field>
-        <field id="dna_payment_cc_vault_active" translate="label" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="0">
+        <field id="dna_payment_cc_vault_active" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
             <label>Enable Vault for Card Payments</label>
             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
             <config_path>payment/dna_payment_cc_vault/active</config_path>
