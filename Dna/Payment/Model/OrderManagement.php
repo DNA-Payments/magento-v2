@@ -714,7 +714,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         ], $secret);
 
         $dna_order_number = $invoiceId;
-        if ($paymentMethod == "googlepay" || $paymentMethod == "applepay") {
+        if (
+            $paymentMethod == "googlepay" ||
+            $paymentMethod == "applepay" ||
+            $paymentMethod == "alipay_plus" ||
+            $paymentMethod == "wechatpay"
+        ) {
             $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
 
             if (!isset($merchantCustomDataJson['quoteId'])) {
