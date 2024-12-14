@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Dna\Payment\Model;
 
 use Dna\Payment\Gateway\Config\Config;
+use Dna\Payment\Helper\DnaAnalytics;
 use Dna\Payment\Model\Config as ModelConfig;
 use DNAPayments\DNAPayments;
 use DNAPayments\Util\RequestException;
@@ -96,6 +97,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     protected $cartRepository;
     protected $customerSession;
     protected $orderCollectionFactory;
+    protected $dnaAnalytics;
 
 
     public function __construct(
@@ -118,7 +120,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         QuoteIdMaskFactory              $quoteIdMaskFactory,
         CartRepositoryInterface         $cartRepository,
         CustomerSession                 $customerSession,
-        OrderCollectionFactory          $orderCollectionFactory
+        OrderCollectionFactory          $orderCollectionFactory,
+        DnaAnalytics                    $dnaAnalytics
     )
     {
         $this->orderRepository = $orderRepository;
@@ -152,6 +155,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->cartRepository = $cartRepository;
         $this->customerSession = $customerSession;
         $this->orderCollectionFactory = $orderCollectionFactory;
+        $this->dnaAnalytics = $dnaAnalytics;
     }
 
     public function getAddress($address)
@@ -278,8 +282,6 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      */
     public function startAndGetOrder()
     {
-        $this->eventManager->dispatch('dna_payment_analytics_event');
-
         $order = $this->checkoutSession->getLastRealOrder();
         $result = $this->dnaPayment->auth($this->getAuthData($order));
         $cards = [];
@@ -647,6 +649,17 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         return true;
     }
 
+    public function sendAnalytics() {
+        try {
+            if ($this->dnaAnalytics->hasHashChanged()) {
+                $authData = $this->getDnaDumbAuthData();
+                $this->eventManager->dispatch('dna_payment_analytics_event', ['access_token' => $authData['accessToken']]);
+            }
+        } catch (\Exception $e) {
+            $this->dnaLogger->logException('Failed to dispatch analytics event', $e);
+        }
+    }
+
     /**
      * @param string $invoiceId
      * @param string $id
@@ -702,6 +715,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $merchantCustomData = null
     )
     {
+        $this->sendAnalytics();
+
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
         $isValidSignature = $this->dnaPayment->isValidSignature([
             'id' => $id,
