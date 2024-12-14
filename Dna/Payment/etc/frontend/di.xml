@@ -14,6 +14,7 @@
                 <item name="dna_payment_applepay_config_provider" xsi:type="object">Dna\Payment\Model\ApplePay\Ui\ConfigProvider</item>
                 <item name="dna_payment_alipay_config_provider" xsi:type="object">Dna\Payment\Model\Alipay\Ui\ConfigProvider</item>
                 <item name="dna_payment_wechatpay_config_provider" xsi:type="object">Dna\Payment\Model\WeChatPay\Ui\ConfigProvider</item>
+                <item name="dna_payment_clicktopay_config_provider" xsi:type="object">Dna\Payment\Model\ClickToPay\Ui\ConfigProvider</item>
             </argument>
         </arguments>
     </type>

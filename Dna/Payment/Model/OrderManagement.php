@@ -718,7 +718,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             $paymentMethod == "googlepay" ||
             $paymentMethod == "applepay" ||
             $paymentMethod == "alipay_plus" ||
-            $paymentMethod == "wechatpay"
+            $paymentMethod == "wechatpay" ||
+            $paymentMethod == "clicktopay"
         ) {
             $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
 

@@ -7,16 +7,18 @@ define(
         'Dna_Payment/js/base-method-renderer',
         'Magento_Checkout/js/model/full-screen-loader',
         'mage/translate',
-        'dna-alipay-wechat-pay',
+        'dna-click-to-pay',
     ],
-    function ($, Component, fullScreenLoader, $t, dnaWeChatPay) {
+    function ($, Component, fullScreenLoader, $t, dnaClickToPay) {
         'use strict';
 
         return Component.extend({
                 createPaymentComponent: function (paymentData, auth) {
                     let self = this;
                     const accessToken = auth.access_token;
-                    window.DNAPayments.WeChatPayComponent.create(
+                    paymentData.auth = auth;
+
+                    window.DNAPayments.ClickToPayComponent.create(
                         $('#' + self.getCode() + '_container')[0],
                         {
                             onClick: () => {
@@ -32,7 +34,7 @@ define(
                                 fullScreenLoader.stopLoader();
                             },
                             onError: (err) => {
-                                console.log('WeChatPayComponent error', err);
+                                console.log('ClickToPayComponent error', err);
 
                                 let message = err.message ||
                                     $t('Your card has not been authorised, please check the details and retry or contact your bank.');
@@ -44,14 +46,13 @@ define(
                                 fullScreenLoader.stopLoader();
                             },
                         },
-                        {
-                            token: accessToken,
-                            paymentData: paymentData
-                        },
+                        [],
+                        accessToken,
+                        paymentData
                     );
                 },
                 getCode: function () {
-                    return 'dna_payment_wechatpay';
+                    return 'dna_payment_clicktopay';
                 },
             }
         );

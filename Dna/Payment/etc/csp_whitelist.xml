@@ -9,6 +9,12 @@
                 <value id="test-cdn.dnapayments.com" type="host">test-cdn.dnapayments.com</value>
             </values>
         </policy>
+        <policy id="img-src">
+            <values>
+                <value id="test-pay.dnapayments.com" type="host">test-pay.dnapayments.com</value>
+                <value id="pay.dnapayments.com" type="host">pay.dnapayments.com</value>
+            </values>
+        </policy>
         <policy id="connect-src">
             <values>
                 <value id="test-api.dnapayments.com" type="host">https://test-api.dnapayments.com</value>

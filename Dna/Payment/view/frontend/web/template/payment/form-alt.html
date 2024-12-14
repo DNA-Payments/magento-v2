@@ -4,14 +4,17 @@
  * See COPYING.txt for license details.
  */
 -->
-<div class="payment-method" data-bind="css: {'_active': (getCode() == isChecked())}"
-     id="payment-method-dna-payment-applepay">
+<div data-bind="css: {'_active': (getCode() == isChecked())}, attr: {'id': getCode() + '_payment_method'}"
+     class="payment-method">
     <div class="payment-method-title field choice">
         <input type="radio"
                name="payment[method]"
                class="radio"
                data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()"/>
         <label class="label" data-bind="attr: {'for': getCode()}">
+            <img data-bind="attr: {src: getLogo(), alt: $t('Payment Method Logo')}"
+                 width="60"
+                 class="payment-icon" />
             <span data-bind="text: getTitle()"></span>
         </label>
     </div>
@@ -31,13 +34,13 @@
             <!--/ko-->
         </div>
         <div class="actions-toolbar">
-            <div id="dna_payment_applepay_warning" class="dna-payment-apple-pay-warning" style="display: none;">
-                <p class="dna-payment-apple-pay-warning-text">
-                    <span data-bind="i18n: 'Apple Pay payments are not supported in your current browser. Please use Safari on a compatible Apple device to complete your transaction.'"></span>
+            <div data-bind="attr: {id: getCode() + '_warning_container'}" class="dna-payment-method-warning-container"
+                 style="display: none;">
+                <p data-bind="attr: {id: getCode() + '_warning_text'}" class="dna-payment-method-warning-text">
                 </p>
             </div>
 
-            <div id="dna_payment_applepay_container"></div>
+            <div data-bind="attr: {id: getCode() + '_container'}" class="dna-payment-method-container"></div>
         </div>
     </div>
 </div>
