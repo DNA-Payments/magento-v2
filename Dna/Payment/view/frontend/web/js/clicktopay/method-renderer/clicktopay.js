@@ -8,8 +8,9 @@ define(
         'Magento_Checkout/js/model/full-screen-loader',
         'mage/translate',
         'dna-click-to-pay',
+        'dnapayments-api'
     ],
-    function ($, Component, fullScreenLoader, $t, dnaClickToPay) {
+    function ($, Component, fullScreenLoader, $t, dnaClickToPay, dnaApi) {
         'use strict';
 
         return Component.extend({
