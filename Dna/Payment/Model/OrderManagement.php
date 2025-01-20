@@ -653,7 +653,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         try {
             if ($this->dnaAnalytics->hasHashChanged()) {
                 $authData = $this->getDnaDumbAuthData();
-                $this->eventManager->dispatch('dna_payment_analytics_event', ['access_token' => $authData['accessToken']]);
+                $this->eventManager->dispatch('dna_payment_analytics_event',
+                    [
+                        'access_token' => $authData['accessToken'],
+                        'is_test_mode' => $this->isTestMode
+                    ]
+                );
             }
         } catch (\Exception $e) {
             $this->dnaLogger->logException('Failed to dispatch analytics event', $e);

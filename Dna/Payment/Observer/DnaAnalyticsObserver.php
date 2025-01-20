@@ -10,7 +10,9 @@ use Magento\Framework\HTTP\Client\Curl;
 
 class DnaAnalyticsObserver implements ObserverInterface
 {
-    const TELEMETRY_API_URL = 'https://test-telemetry-api.dnapayments.com/v1/cms-plugins-versions';
+    const TELEMETRY_API_URL_TEST = 'https://test-telemetry-api.dnapayments.com/v1/cms-plugins-versions';
+    const TELEMETRY_API_URL = 'https://telemetry-api.dnapayments.com/v1/cms-plugins-versions';
+
     protected $dnaAnalytics;
     protected $dnaLogger;
     protected $curlClient;
@@ -30,10 +32,11 @@ class DnaAnalyticsObserver implements ObserverInterface
     {
         try {
             $accessToken = $observer->getData('access_token');
+            $isTestMode = $observer->getData('is_test_mode');
 
             if ($accessToken) {
                 $analyticsData = $this->dnaAnalytics->getAnalyticsData();
-                $response = $this->sendAnalytics($accessToken, $analyticsData);
+                $response = $this->sendAnalytics($accessToken, $isTestMode, $analyticsData);
                 $this->dnaAnalytics->updateHash();
             }
         } catch (\Exception $e) {
@@ -41,12 +44,13 @@ class DnaAnalyticsObserver implements ObserverInterface
         }
     }
 
-    public function sendAnalytics($accessToken, $analyticsData) {
+    public function sendAnalytics($accessToken, $isTestMode, $analyticsData) {
         try {
             $this->curlClient->addHeader('Content-Type', 'application/json');
             $this->curlClient->addHeader('Authorization', 'Bearer ' . $accessToken);
 
-            $this->curlClient->post(self::TELEMETRY_API_URL, json_encode($analyticsData));
+            $url = $isTestMode ? self::TELEMETRY_API_URL_TEST : self::TELEMETRY_API_URL;
+            $this->curlClient->post($url, json_encode($analyticsData));
 
             $responseBody = $this->curlClient->getBody();
             $responseStatus = $this->curlClient->getStatus();
