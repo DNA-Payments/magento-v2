@@ -12,6 +12,7 @@
         <policy id="connect-src">
             <values>
                 <value id="test-api.dnapayments.com" type="host">https://test-api.dnapayments.com</value>
+                <value id="api.dnapayments.com" type="host">https://api.dnapayments.com</value>
             </values>
         </policy>
     </policies>
