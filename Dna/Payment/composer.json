@@ -1,10 +1,10 @@
 {
   "autoload": {
     "psr-4": {
-      "Dna\\Payment\\": "Dna/Payment"
+      "Dna\\Payment\\": ""
     },
     "files": [
-      "Dna/Payment/registration.php"
+      "registration.php"
     ]
   },
   "config": {
@@ -19,7 +19,7 @@
     "AFL-3.0"
   ],
   "minimum-stability": "dev",
-  "name": "dna/magento-2",
+  "name": "dnapayments/module-payment",
   "prefer-stable": true,
   "repositories": {
     "magento": {
