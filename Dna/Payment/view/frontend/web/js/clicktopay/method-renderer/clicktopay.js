@@ -14,42 +14,45 @@ define(
         'use strict';
 
         return Component.extend({
-                createPaymentComponent: function (paymentData, auth) {
+                createPaymentComponent: function (paymentData, auth, isTestMode) {
                     let self = this;
                     const accessToken = auth.access_token;
                     paymentData.auth = auth;
 
-                    window.DNAPayments.ClickToPayComponent.create(
-                        $('#' + self.getCode() + '_container')[0],
+                    window.DNAPayments.ClickToPayComponent.init(
                         {
-                            onClick: () => {
-                                fullScreenLoader.startLoader();
-                                $('#' + self.getCode() + '_warning_container').hide();
-                                return {};
-                            },
-                            onPaymentSuccess: (result) => {
-                                fullScreenLoader.stopLoader();
-                                self.placeOrder();
-                            },
-                            onCancel: () => {
-                                fullScreenLoader.stopLoader();
-                            },
-                            onError: (err) => {
-                                console.log('ClickToPayComponent error', err);
+                            containerElement: $('#' + self.getCode() + '_container')[0],
+                            paymentData: paymentData,
+                            events: {
+                                onClick: () => {
+                                    fullScreenLoader.startLoader();
+                                    $('#' + self.getCode() + '_warning_container').hide();
+                                    return {};
+                                },
+                                onPaymentSuccess: (result) => {
+                                    fullScreenLoader.stopLoader();
+                                    self.placeOrder();
+                                },
+                                onCancel: () => {
+                                    fullScreenLoader.stopLoader();
+                                },
+                                onError: (err) => {
+                                    console.log('ClickToPayComponent error', err);
 
-                                let message = err.message ||
-                                    $t('Your card has not been authorised, please check the details and retry or contact your bank.');
+                                    let message = err.message ||
+                                        $t('Your card has not been authorised, please check the details and retry or contact your bank.');
 
-                                self.showError(message);
-                                fullScreenLoader.stopLoader();
+                                    self.showError(message);
+                                    fullScreenLoader.stopLoader();
+                                },
+                                onLoad: () => {
+                                    fullScreenLoader.stopLoader();
+                                },
                             },
-                            onLoad: () => {
-                                fullScreenLoader.stopLoader();
-                            },
-                        },
-                        [],
-                        accessToken,
-                        paymentData
+                            cardBrands: [],
+                            token: accessToken,
+                            environment: isTestMode ? 'sandbox' : 'production'
+                        }
                     );
                 },
                 getCode: function () {

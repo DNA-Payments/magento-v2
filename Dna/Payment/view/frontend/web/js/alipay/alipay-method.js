@@ -18,8 +18,6 @@ define(
         let config = window.checkoutConfig.payment;
         let dnaPaymentType = 'dna_payment_alipay_plus';
 
-        console.log('alipay', config);
-
         if (config[dnaPaymentType] && config[dnaPaymentType].isActive) {
             rendererList.push(
                 {

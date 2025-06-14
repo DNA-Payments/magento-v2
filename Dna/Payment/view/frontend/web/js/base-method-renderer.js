@@ -25,9 +25,9 @@ define(
 
                 self.fetchQuotePaymentData(quoteId)
                     .then(async function (response) {
-                        const {paymentData, auth} = response;
+                        const {paymentData, auth, isTestMode} = response;
 
-                        self.createPaymentComponent(paymentData, auth);
+                        self.createPaymentComponent(paymentData, auth, isTestMode);
                     })
                     .catch(function (error) {
                         console.error('Failed to fetch quote data:', error);
@@ -37,7 +37,7 @@ define(
 
                 return this;
             },
-            createPaymentComponent: function (paymentData, auth) {
+            createPaymentComponent: function (paymentData, auth, isTestMode) {
             },
             fetchQuotePaymentData: function (quoteId) {
                 return api.fetchQuotePaymentData(quoteId);

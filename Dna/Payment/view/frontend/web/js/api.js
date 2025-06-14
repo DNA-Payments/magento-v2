@@ -13,20 +13,18 @@ define([
                     url: '/rest/V1/dna-payment/get-quote-payment-data?quoteId=' + quoteId,
                     type: 'get',
                     success: function (res) {
-                        const {paymentData, auth, adminOrderViewUrl} = (function () {
+                        const {paymentData, auth, isTestMode} = (function () {
                             if (Array.isArray(res)) {
-                                const [p, a, t, i, u] = res
+                                const [p, a, t] = res
                                 return {
                                     paymentData: p,
                                     auth: a,
                                     isTestMode: t,
-                                    integrationType: i,
-                                    adminOrderViewUrl: u
                                 }
                             }
                             return res || {}
                         })()
-                        resolve({paymentData, auth, adminOrderViewUrl});
+                        resolve({paymentData, auth, isTestMode});
                     },
                     error: function (err) {
                         reject(err);

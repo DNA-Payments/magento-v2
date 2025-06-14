@@ -7,6 +7,8 @@
                 <value id="test-pay.dnapayments.com" type="host">test-pay.dnapayments.com</value>
                 <value id="cdn.dnapayments.com" type="host">cdn.dnapayments.com</value>
                 <value id="test-cdn.dnapayments.com" type="host">test-cdn.dnapayments.com</value>
+                <value id="sentry.dnapayments.com" type="host">sentry.dnapayments.com</value>
+                <value id="test-sentry.dnapayments.com" type="host">test-sentry.dnapayments.com</value>
             </values>
         </policy>
         <policy id="img-src">
@@ -18,6 +20,9 @@
         <policy id="connect-src">
             <values>
                 <value id="test-api.dnapayments.com" type="host">https://test-api.dnapayments.com</value>
+                <value id="api.dnapayments.com" type="host">https://api.dnapayments.com</value>
+                <value id="sentry.dnapayments.com" type="host">sentry.dnapayments.com</value>
+                <value id="test-sentry.dnapayments.com" type="host">test-sentry.dnapayments.com</value>
             </values>
         </policy>
     </policies>
