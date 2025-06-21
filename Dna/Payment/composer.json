@@ -1,10 +1,10 @@
 {
   "autoload": {
     "psr-4": {
-      "Dna\\Payment\\": "Dna/Payment"
+      "Dna\\Payment\\": ""
     },
     "files": [
-      "Dna/Payment/registration.php"
+      "registration.php"
     ]
   },
   "config": {
@@ -29,12 +29,12 @@
   },
   "require": {
     "php": ">=7.0",
-    "magento/module-sales": "*",
-    "magento/module-checkout": "*",
-    "magento/module-payment": "*",
-    "magento/framework": "*",
-    "dna/dnapayments-sdk-php": "2.1.2",
-    "magento/module-vault": "^101.0.0"
+    "magento/module-sales": "^100.0||^101.0||^102.0||^103.0",
+    "magento/module-checkout": "^100.0",
+    "magento/module-payment": "^100.0",
+    "magento/framework": "^100.0||^101.0||^102.0||^103.0",
+    "magento/module-vault": "^100.1||^101.2",
+    "dna/dnapayments-sdk-php": "2.1.2"
   },
   "require-dev": {
     "magento/magento-composer-installer": "0.4.0"
