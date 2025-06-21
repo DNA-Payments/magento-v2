@@ -20,8 +20,6 @@ class Config extends \Magento\Payment\Gateway\Config\Config
     const KEY_CLIENT_SECRET_TEST = 'client_secret_test';
 
     const KEY_BACK_LINK = 'back_link';
-
-    const KEY_ORDER_SUCCESS_STATUS = 'order_status_success';
     const KEY_INTEGRATION_TYPE = 'integration_type';
 
     protected $scopeConfig;
@@ -102,9 +100,9 @@ class Config extends \Magento\Payment\Gateway\Config\Config
         return $this->getValue(Config::KEY_CLIENT_SECRET_TEST, $storeId);
     }
 
-    public function getOrderSuccessStatus($storeId = null)
+    public function getOrderSuccessStatus()
     {
-        return $this->getValue(Config::KEY_ORDER_SUCCESS_STATUS, $storeId);
+        return "processing";
     }
 
     public function isVaultEnabled()
