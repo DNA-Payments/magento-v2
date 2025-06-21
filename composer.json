@@ -1,10 +1,10 @@
 {
   "autoload": {
     "psr-4": {
-      "Dna\\Payment\\": ""
+      "Dna\\Payment\\": "Dna/Payment"
     },
     "files": [
-      "registration.php"
+      "Dna/Payment/registration.php"
     ]
   },
   "config": {
