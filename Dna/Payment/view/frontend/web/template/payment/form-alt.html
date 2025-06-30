@@ -40,7 +40,11 @@
                 </p>
             </div>
 
-            <div data-bind="attr: {id: getCode() + '_container'}" class="dna-payment-method-container"></div>
+            <div class="dna-payment-method-container">
+                <div class="dna-payment-method-loader" data-bind="blockLoader: isLoading">
+                </div>
+                <div data-bind="attr: {id: getCode() + '_container'}"></div>
+            </div>
         </div>
     </div>
 </div>

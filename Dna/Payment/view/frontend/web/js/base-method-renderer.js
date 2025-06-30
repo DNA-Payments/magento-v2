@@ -4,40 +4,55 @@
 define(
     [
         'jquery',
+        'ko',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Checkout/js/model/quote',
         'Magento_Checkout/js/model/full-screen-loader',
         'mage/translate',
         'Dna_Payment/js/api'
     ],
-    function ($, Component, quote, fullScreenLoader, $t, api) {
+    function ($, ko, Component, quote, fullScreenLoader, $t, api) {
         'use strict';
 
         return Component.extend({
             defaults: {
                 template: 'Dna_Payment/payment/form-alt',
             },
+            isLoading: ko.observable(false),
             initialize: function () {
                 this._super();
 
                 let self = this;
                 let quoteId = quote.getQuoteId();
 
-                self.fetchQuotePaymentData(quoteId)
-                    .then(async function (response) {
-                        const {paymentData, auth, isTestMode} = response;
+                quote.totals.subscribe(function (newTotals) {
+                    if (newTotals && newTotals.grand_total) {
+                        self.renderPaymentComponent(quoteId);
+                    }
+                });
 
-                        self.createPaymentComponent(paymentData, auth, isTestMode);
-                    })
-                    .catch(function (error) {
-                        console.error('Failed to fetch quote data:', error);
-
-                        fullScreenLoader.stopLoader();
-                    });
+                self.renderPaymentComponent(quoteId);
 
                 return this;
             },
             createPaymentComponent: function (paymentData, auth, isTestMode) {
+            },
+            renderPaymentComponent: function(quoteId) {
+                let self = this;
+                $('#' + self.getCode() + '_container').html('');
+                self.isLoading(true);
+
+                self.fetchQuotePaymentData(quoteId)
+                    .then(async function (response) {
+                        const {paymentData, auth, isTestMode} = response;
+                        self.isLoading(false);
+                        self.createPaymentComponent(paymentData, auth, isTestMode);
+                    })
+                    .catch(function (error) {
+                        console.error('Failed to fetch quote data:', error);
+                        self.isLoading(false);
+                        fullScreenLoader.stopLoader();
+                    });
             },
             fetchQuotePaymentData: function (quoteId) {
                 return api.fetchQuotePaymentData(quoteId);
