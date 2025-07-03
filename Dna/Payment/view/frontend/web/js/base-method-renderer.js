@@ -26,19 +26,19 @@ define(
                 let quoteId = quote.getQuoteId();
 
                 quote.totals.subscribe(function (newTotals) {
-                    if (newTotals && newTotals.grand_total) {
-                        self.renderPaymentComponent(quoteId);
+                    if (newTotals && newTotals.grand_total && self.grand_total && self.grand_total !== newTotals.grand_total) {
+                        self.renderPaymentComponent(self, quoteId);
                     }
+                    self.grand_total = newTotals.grand_total;
                 });
 
-                self.renderPaymentComponent(quoteId);
+                self.renderPaymentComponent(self, quoteId);
 
                 return this;
             },
             createPaymentComponent: function (paymentData, auth, isTestMode) {
             },
-            renderPaymentComponent: function(quoteId) {
-                let self = this;
+            renderPaymentComponent: function(self, quoteId) {
                 $('#' + self.getCode() + '_container').html('');
                 self.isLoading(true);
 
