@@ -26,7 +26,7 @@ define(
                 let quoteId = quote.getQuoteId();
 
                 quote.totals.subscribe(function (newTotals) {
-                    if (newTotals && newTotals.grand_total && self.grand_total && self.grand_total !== newTotals.grand_total) {
+                    if (newTotals && newTotals.grand_total && (self.grand_total || !self.isActive()) && self.grand_total !== newTotals.grand_total) {
                         self.renderPaymentComponent(self, quoteId);
                     }
                     self.grand_total = newTotals.grand_total;
@@ -65,6 +65,12 @@ define(
             },
             getLogo: function () {
                 return window.checkoutConfig.payment[this.getCode()].logo;
+            },
+            getId: function () {
+                return this.index;
+            },
+            isActive: function () {
+                return this.isChecked() === this.getId();
             },
         });
     }
