@@ -7,23 +7,27 @@ define(
         'Dna_Payment/js/base-method-renderer',
         'Magento_Checkout/js/model/full-screen-loader',
         'mage/translate',
-        'dna-apple-pay',
+        'dna-click-to-pay',
+        'dnapayments-api'
     ],
-    function ($, Component, fullScreenLoader, $t, dnaApplePay) {
+    function ($, Component, fullScreenLoader, $t, dnaClickToPay, dnaApi) {
         'use strict';
 
         return Component.extend({
                 createPaymentComponent: function (paymentData, auth, isTestMode) {
                     let self = this;
                     const accessToken = auth.access_token;
+                    paymentData.auth = auth;
 
-                    window.DNAPayments.ApplePayComponent.init({
+                    window.DNAPayments.ClickToPayComponent.init(
+                        {
                             containerElement: $('#' + self.getCode() + '_container')[0],
                             paymentData: paymentData,
                             events: {
                                 onClick: () => {
                                     fullScreenLoader.startLoader();
                                     $('#' + self.getCode() + '_warning_container').hide();
+                                    return {};
                                 },
                                 onPaymentSuccess: (result) => {
                                     fullScreenLoader.stopLoader();
@@ -33,14 +37,10 @@ define(
                                     fullScreenLoader.stopLoader();
                                 },
                                 onError: (err) => {
-                                    console.log('ApplePayComponent error', err);
+                                    console.log('ClickToPayComponent error', err);
 
                                     let message = err.message ||
                                         $t('Your card has not been authorised, please check the details and retry or contact your bank.');
-
-                                    if (err.code === 1002 || err.code === 1003) {
-                                        message = $t('Apple Pay payments are not supported in your current browser. Please use Safari on a compatible Apple device to complete your transaction.');
-                                    }
 
                                     self.showError(message);
                                     fullScreenLoader.stopLoader();
@@ -49,13 +49,14 @@ define(
                                     fullScreenLoader.stopLoader();
                                 },
                             },
+                            cardBrands: [],
                             token: accessToken,
                             environment: isTestMode ? 'sandbox' : 'production'
                         }
                     );
                 },
                 getCode: function () {
-                    return 'dna_payment_applepay';
+                    return 'dna_payment_clicktopay';
                 },
             }
         );

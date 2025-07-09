@@ -20,9 +20,9 @@ class DnaAnalytics extends AbstractHelper
     protected $config;
 
     private $integrationTypes = [
-        0 => 'Hosted',
-        1 => 'Embedded',
-        2 => 'Seamless'
+        0 => 'hosted',
+        1 => 'embedded',
+        2 => 'seamless'
     ];
 
     public function __construct(
@@ -75,7 +75,7 @@ class DnaAnalytics extends AbstractHelper
      * @throws LocalizedException
      * @throws FileSystemException
      */
-    public function hasHashChanged()
+    public function hasHashChanged(): bool
     {
         $hashFile = $this->getHashFilePath();
 

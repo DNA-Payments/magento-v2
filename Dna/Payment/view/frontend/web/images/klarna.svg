@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="24px" viewBox="-8 0 24 11" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>klarna</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="klarna" transform="translate(0.132075, 0.660377)" fill="#000000" fill-rule="nonzero">
+            <path d="M7.88570156,0 L5.67958266,0 C5.6870789,1.79275934 4.84070776,3.48201573 3.40023941,4.5492988 L2.52717959,5.20268547 L5.906766,9.81582091 L8.69116966,9.81582091 L5.57819509,5.57068487 C7.06271409,4.09798507 7.89402488,2.09106963 7.88570156,0 L7.88570156,0 Z" id="Path"></path>
+            <polygon id="Path" points="0 9.81582091 2.25869023 9.81582091 2.25869023 0 0 0"></polygon>
+        </g>
+    </g>
+</svg>

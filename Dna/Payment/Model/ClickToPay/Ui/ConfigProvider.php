@@ -1,13 +1,13 @@
 <?php
-namespace Dna\Payment\Model\ApplePay\Ui;
+namespace Dna\Payment\Model\ClickToPay\Ui;
 
 use Magento\Checkout\Model\ConfigProviderInterface;
-use Dna\Payment\Model\ApplePay\Config;
+use Dna\Payment\Model\ClickToPay\Config;
 use Magento\Framework\View\Asset\Repository;
 
 class ConfigProvider implements ConfigProviderInterface
 {
-    const CODE = 'dna_payment_applepay';
+    const CODE = 'dna_payment_clicktopay';
 
     private $config;
     private $assetRepo;
@@ -45,6 +45,6 @@ class ConfigProvider implements ConfigProviderInterface
     }
 
     public function getPaymentLogo() {
-        return $this->assetRepo->getUrl('Dna_Payment::images/apple_pay.svg');
+        return $this->assetRepo->getUrl('Dna_Payment::images/clicktopay.svg');
     }
 }

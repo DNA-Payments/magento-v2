@@ -7,9 +7,9 @@ define(
         'Dna_Payment/js/base-method-renderer',
         'Magento_Checkout/js/model/full-screen-loader',
         'mage/translate',
-        'dna-apple-pay',
+        'dna-alipay-wechat-pay',
     ],
-    function ($, Component, fullScreenLoader, $t, dnaApplePay) {
+    function ($, Component, fullScreenLoader, $t, dnaAlipay) {
         'use strict';
 
         return Component.extend({
@@ -17,13 +17,16 @@ define(
                     let self = this;
                     const accessToken = auth.access_token;
 
-                    window.DNAPayments.ApplePayComponent.init({
+                    window.DNAPayments.AlipayPlusComponent.init(
+                        {
                             containerElement: $('#' + self.getCode() + '_container')[0],
                             paymentData: paymentData,
                             events: {
                                 onClick: () => {
                                     fullScreenLoader.startLoader();
                                     $('#' + self.getCode() + '_warning_container').hide();
+
+                                    return {};
                                 },
                                 onPaymentSuccess: (result) => {
                                     fullScreenLoader.stopLoader();
@@ -33,14 +36,10 @@ define(
                                     fullScreenLoader.stopLoader();
                                 },
                                 onError: (err) => {
-                                    console.log('ApplePayComponent error', err);
+                                    console.log('AlipayPlusComponent error', err);
 
                                     let message = err.message ||
                                         $t('Your card has not been authorised, please check the details and retry or contact your bank.');
-
-                                    if (err.code === 1002 || err.code === 1003) {
-                                        message = $t('Apple Pay payments are not supported in your current browser. Please use Safari on a compatible Apple device to complete your transaction.');
-                                    }
 
                                     self.showError(message);
                                     fullScreenLoader.stopLoader();
@@ -55,8 +54,8 @@ define(
                     );
                 },
                 getCode: function () {
-                    return 'dna_payment_applepay';
-                },
+                    return 'dna_payment_alipay_plus';
+                }
             }
         );
     }

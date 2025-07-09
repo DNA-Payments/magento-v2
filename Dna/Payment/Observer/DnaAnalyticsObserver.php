@@ -10,6 +10,9 @@ use Magento\Framework\HTTP\Client\Curl;
 
 class DnaAnalyticsObserver implements ObserverInterface
 {
+    const TELEMETRY_API_URL_TEST = 'https://test-telemetry-api.dnapayments.com/v1/cms-plugins-versions';
+    const TELEMETRY_API_URL = 'https://telemetry-api.dnapayments.com/v1/cms-plugins-versions';
+
     protected $dnaAnalytics;
     protected $dnaLogger;
     protected $curlClient;
@@ -28,25 +31,37 @@ class DnaAnalyticsObserver implements ObserverInterface
     public function execute(Observer $observer)
     {
         try {
-            if ($this->dnaAnalytics->hasHashChanged()) {
-                $this->dnaLogger->info('Hash has changed');
+            $accessToken = $observer->getData('access_token');
+            $isTestMode = $observer->getData('is_test_mode');
 
+            if ($accessToken) {
                 $analyticsData = $this->dnaAnalytics->getAnalyticsData();
-                $analyticsDataJson = json_encode($analyticsData);
-
-                $this->dnaLogger->info('Analytics Data: ' . $analyticsDataJson);
-
-                // TODO: dummy url for testing, replace with actual one
-                $url = 'https://webhook.site/170091f1-8f4e-4c18-a0e0-643e94bd2cb1';
-                $this->curlClient->addHeader('Content-Type', 'application/json');
-                $this->curlClient->post($url, $analyticsDataJson);
-
+                $response = $this->sendAnalytics($accessToken, $isTestMode, $analyticsData);
                 $this->dnaAnalytics->updateHash();
-            } else {
-                $this->dnaLogger->info('Hash did not changed');
             }
         } catch (\Exception $e) {
             $this->dnaLogger->logException('Failed to process dna analytics event', $e);
+        }
+    }
+
+    public function sendAnalytics($accessToken, $isTestMode, $analyticsData) {
+        try {
+            $this->curlClient->addHeader('Content-Type', 'application/json');
+            $this->curlClient->addHeader('Authorization', 'Bearer ' . $accessToken);
+
+            $url = $isTestMode ? self::TELEMETRY_API_URL_TEST : self::TELEMETRY_API_URL;
+            $this->curlClient->post($url, json_encode($analyticsData));
+
+            $responseBody = $this->curlClient->getBody();
+            $responseStatus = $this->curlClient->getStatus();
+
+            if ($responseStatus === 200) {
+                return json_decode($responseBody, true);
+            } else {
+                throw new \Exception('Error: ' . $responseBody);
+            }
+        } catch (\Exception $e) {
+            throw new \Exception('API Request failed: ' . $e->getMessage());
         }
     }
 }

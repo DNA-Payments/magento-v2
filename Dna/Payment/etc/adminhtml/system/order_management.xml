@@ -9,11 +9,6 @@
             <source_model>Dna\Payment\Model\PaymentActions</source_model>
             <attribute type="shared">1</attribute>
         </field>
-        <field id="order_status_success" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
-            <label>Order status when payment is success</label>
-            <source_model>Dna\Payment\Model\Status</source_model>
-            <config_path>payment/dna_payment/order_status_success</config_path>
-        </field>
         <field id="integration_type" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1">
             <label>Payment form integration type</label>
             <config_path>payment/dna_payment/integration_type</config_path>

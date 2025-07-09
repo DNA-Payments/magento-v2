@@ -17,5 +17,14 @@
         <method name="dna_payment_applepay">
             <allow_multiple_address>0</allow_multiple_address>
         </method>
+        <method name="dna_payment_alipay_plus">
+            <allow_multiple_address>0</allow_multiple_address>
+        </method>
+        <method name="dna_payment_wechatpay">
+            <allow_multiple_address>0</allow_multiple_address>
+        </method>
+        <method name="dna_payment_clicktopay">
+            <allow_multiple_address>0</allow_multiple_address>
+        </method>
     </methods>
 </payment>

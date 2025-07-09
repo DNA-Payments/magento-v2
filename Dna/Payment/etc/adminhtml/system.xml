@@ -10,6 +10,9 @@
                 <include path="Dna_Payment::system/order_management.xml"/>
                 <include path="Dna_Payment::system/google_pay.xml"/>
                 <include path="Dna_Payment::system/apple_pay.xml"/>
+                <include path="Dna_Payment::system/alipay_plus.xml"/>
+                <include path="Dna_Payment::system/wechat_pay.xml"/>
+<!--                <include path="Dna_Payment::system/click_to_pay.xml"/>-->
             </group>
         </section>
     </system>
