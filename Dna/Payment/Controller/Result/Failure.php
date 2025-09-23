@@ -10,6 +10,7 @@ use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Framework\Message\ManagerInterface;
+use Magento\Framework\Exception\LocalizedException;
 
 
 class Failure extends Action implements ViewInterface
@@ -68,7 +69,7 @@ class Failure extends Action implements ViewInterface
                 $order->cancel();
                 $this->orderRepository->save($order);
             } catch (\Exception $e) {
-                throw new Error(__('Error can not set status ' + $status));
+                throw new LocalizedException(__('Error can not set status %1', $status));
             }
         }
 
