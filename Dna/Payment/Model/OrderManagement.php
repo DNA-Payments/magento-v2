@@ -34,6 +34,8 @@ use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Framework\Session\Generic as SessionManager;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Quote\Api\Data\CartInterface;
 
 
 /**
@@ -327,8 +329,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     /**
      *
      * @return array
-     * @throws Error
      * @throws RequestException
+     * @throws LocalizedException
      */
     public function getDnaPaymentData($orderId)
     {
@@ -346,9 +348,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     /**
      *
      * @return array
-     * @throws Error
      * @throws RequestException
-     * @throws NoSuchEntityException
      */
     public function getOrderPaymentData($orderId)
     {
@@ -383,6 +383,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         $client_id = $this->isTestMode ? $this->config->getClientIdTest($this->storeId) : $this->config->getClientId($this->storeId);
         $order_id = $this->generateOrderId($client_id);
+        $email    = $this->resolveEmail($quote);
 
         $authData = $this->dnaPayment->auth(
             [
@@ -409,7 +410,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     'failureCallbackUrl' => $this->getUrl('rest/V1/dna-payment/failure'),
                 ],
                 'customerDetails' => [
-                    'email' => $quote->getCustomerEmail(),
+                    'email' => $email,
                     'accountDetails' => [
                         'accountId' => $quote->getCustomerId() ? $quote->getCustomerId() : '',
                     ],
@@ -476,6 +477,38 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     }
 
     /**
+     * Resolve customer email for both registered and guest quotes.
+     */
+    private function resolveEmail(CartInterface $quote) {
+        if ($quote->getCustomerId() && $quote->getCustomerEmail()) {
+            return $quote->getCustomerEmail();
+        }
+
+        $billing = $quote->getBillingAddress();
+        if ($billing && $billing->getEmail()) {
+            return $billing->getEmail();
+        }
+
+        $shipping = $quote->getShippingAddress();
+        if ($shipping && $shipping->getEmail()) {
+            return $shipping->getEmail();
+        }
+
+        if ($quote->getCustomerEmail()) {
+            return $quote->getCustomerEmail();
+        }
+
+        if ($quote->getCustomer() && $quote->getCustomer()->getEmail()) {
+            return $quote->getCustomer()->getEmail();
+        }
+
+        $this->dnaLogger->warning('No email found for quote', ['quote_id' => $quote->getId()]);
+
+        return null;
+    }
+
+
+    /**
      * Generate an alphanumeric, Base62-encoded, SHA-256 hash-based order ID
      *
      * @param string $client_id
@@ -519,7 +552,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      * Cancel order
      * @param string $orderId
      * @return array
-     **/
+     *
+     * @throws LocalizedException
+     */
     public function cancelOrder($orderId)
     {
         $order = $this->orderFactory->create()->loadByIncrementId($orderId);
@@ -531,7 +566,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 'order_id' => $orderId
             ]);
 
-            throw new Error(__('Failed to cancel order ' . $orderId));
+            throw new LocalizedException(__('Failed to cancel order with ID %1', $orderId));
         }
 
         return [
@@ -552,7 +587,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 'order_id' => $orderId,
                 'status' => $status,
             ]);
-            throw new Error(__('Failed to update order ID ' . $orderId . ' with status ' . $status));
+            throw new LocalizedException(__('Failed to update order ID %1 with status %2', $orderId, $status));
         }
     }
 
@@ -734,19 +769,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         ], $secret);
 
         $dna_order_number = $invoiceId;
-        if (
-            $paymentMethod == "googlepay" ||
-            $paymentMethod == "applepay" ||
-            $paymentMethod == "alipay_plus" ||
-            $paymentMethod == "wechatpay" ||
-            $paymentMethod == "clicktopay"
-        ) {
-            $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
+        $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
 
-            if (!isset($merchantCustomDataJson['quoteId'])) {
-                throw new \Exception('No quoteId found with merchantCustomData');
-            }
-
+        if (isset($merchantCustomDataJson['quoteId'])) {
             $quoteId = $merchantCustomDataJson['quoteId'];
 
             $orderCollection = $this->orderCollectionFactory->create()

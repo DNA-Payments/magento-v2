@@ -3,19 +3,20 @@
 namespace Dna\Payment\Model;
 
 use Magento\Sales\Model\Order;
+use Magento\Framework\Exception\LocalizedException;
 
 class Helpers
 {
 
     /**
      * @return \Magento\Sales\Model\Order
-     * @throws \Error
+     * @throws LocalizedException
      */
     public static function getOrderInfo($orderId)
     {
         $order = self::getObjectManager()->create('Magento\Sales\Model\OrderFactory')->create()->loadByIncrementId($orderId);
         if (empty($order->getId())) {
-            throw new Error(__('Error: Can not find order'));
+            throw new LocalizedException(__('Cannot find order with ID %1', $orderId));
         }
         return $order;
     }
@@ -28,7 +29,7 @@ class Helpers
     public static function invoiceOrder($order, $transactionId)
     {
         if (!$order->canInvoice()) {
-            throw new \Magento\Framework\Exception\LocalizedException(
+            throw new LocalizedException(
                 __('Cannot create an invoice.')
             );
         }
