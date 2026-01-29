@@ -3,14 +3,16 @@
 define(
     [
         'jquery',
-        'Magento_Payment/js/view/payment/cc-form',
-        'Magento_Checkout/js/action/place-order',
-        'Magento_Checkout/js/model/full-screen-loader',
-        'Magento_Vault/js/view/payment/vault-enabler',
         'dnaPaymentsHostedFields',
         'mage/storage',
+        'mage/translate',
+        'Magento_Checkout/js/action/place-order',
+        'Magento_Checkout/js/model/full-screen-loader',
+        'Magento_Ui/js/model/messageList',
+        'Magento_Vault/js/view/payment/vault-enabler',
+        'Magento_Payment/js/view/payment/cc-form'
     ],
-    function ($, Component, placeOrderAction, fullScreenLoader, VaultEnabler, hostedFields, storage) {
+    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, Component) {
         'use strict';
 
         return Component.extend({
@@ -76,6 +78,11 @@ define(
             getVaultCode: function () {
                 return window.checkoutConfig.payment[this.getCode()].ccVaultCode;
             },
+            showError: function (errorMessage) {
+                globalMessageList.addErrorMessage({
+                    message: errorMessage
+                });
+            },
             placeOrder: async function (data, event) {
                 let self = this;
 
@@ -118,11 +125,14 @@ define(
                                             } else {
                                                 self.hostedFieldsInstance.clear();
                                             }
+
+                                            self.showError((error && error.message) || $t('Payment failed. Please try again.'));
                                         }
                                     })
                                     .catch(function (error) {
                                         fullScreenLoader.stopLoader();
                                         self.isPlaceOrderActionAllowed(true);
+                                        self.showError($t('Failed to load payment data.'));
                                     });
                             }
                         },
@@ -132,6 +142,7 @@ define(
 
                             fullScreenLoader.stopLoader();
                             self.isPlaceOrderActionAllowed(true);
+                            self.showError($t('Failed to place order.'));
                         }
                     );
 
@@ -141,6 +152,7 @@ define(
 
                     fullScreenLoader.stopLoader();
                     self.isPlaceOrderActionAllowed(true);
+                    self.showError($t('Please check your card details.'));
                 }
 
                 return false;
