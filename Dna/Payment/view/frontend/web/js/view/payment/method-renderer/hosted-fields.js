@@ -82,6 +82,7 @@ define(
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
+                $('html, body').animate({ scrollTop: 0 }, 300);
             },
             placeOrder: async function (data, event) {
                 let self = this;
@@ -93,48 +94,50 @@ define(
                 if (await this.validate() && this.isPlaceOrderActionAllowed() === true) {
                     fullScreenLoader.startLoader();
                     this.isPlaceOrderActionAllowed(false);
-                    this.getPlaceOrderDeferredObject().done(
+
+                    var orderPromise = self.orderId
+                        ? $.Deferred().resolve(self.orderId).promise()
+                        : this.getPlaceOrderDeferredObject();
+
+                    orderPromise.done(
                         function (orderId) {
                             self.orderId = orderId;
-                            if (!self.paymentResponse) {
-                                self.fetchPaymentData(orderId)
-                                    .then(async function (response) {
-                                        self.paymentResponse = response;
-                                        const {paymentData, accessToken} = response;
+                            self.fetchPaymentData(orderId)
+                                .then(async function (response) {
+                                    self.paymentResponse = response;
+                                    const {paymentData, accessToken} = response;
 
-                                        try {
-                                            if (self.isVaultEnabled()) {
-                                                paymentData.merchantCustomData = JSON.stringify({
-                                                    storeCardOnFile: $('#' + self.getCode() + '_enable_vault').prop('checked')
-                                                });
-                                            }
-
-                                            await self.hostedFieldsInstance.submit({
-                                                paymentData: paymentData,
-                                                token: accessToken
+                                    try {
+                                        if (self.isVaultEnabled()) {
+                                            paymentData.merchantCustomData = JSON.stringify({
+                                                storeCardOnFile: $('#' + self.getCode() + '_enable_vault').prop('checked')
                                             });
-                                            window.location.href = paymentData.paymentSettings.returnUrl;
-                                        } catch (error) {
-                                            console.error('Failed to submit hosted fields data:', error);
-
-                                            fullScreenLoader.stopLoader();
-                                            self.isPlaceOrderActionAllowed(true);
-
-                                            if (error.code === 'INVALID_CARD_DATA') {
-                                                console.log('INVALID_CARD_DATA');
-                                            } else {
-                                                self.hostedFieldsInstance.clear();
-                                            }
-
-                                            self.showError((error && error.message) || $t('Payment failed. Please try again.'));
                                         }
-                                    })
-                                    .catch(function (error) {
+
+                                        await self.hostedFieldsInstance.submit({
+                                            paymentData: paymentData,
+                                            token: accessToken
+                                        });
+                                        window.location.href = paymentData.paymentSettings.returnUrl;
+                                    } catch (error) {
+                                        console.error('Failed to submit hosted fields data:', error);
+
                                         fullScreenLoader.stopLoader();
                                         self.isPlaceOrderActionAllowed(true);
-                                        self.showError($t('Failed to load payment data.'));
-                                    });
-                            }
+
+                                        if (error.code === 'INVALID_CARD_DATA') {
+                                            console.log('INVALID_CARD_DATA');
+                                        } else {
+                                            self.hostedFieldsInstance.clear();
+                                        }
+                                        self.showError((error && error.message) || $t('Payment failed. Please try again.'));
+                                    }
+                                })
+                                .catch(function (error) {
+                                    fullScreenLoader.stopLoader();
+                                    self.isPlaceOrderActionAllowed(true);
+                                    self.showError($t('Failed to load payment data.'));
+                                });
                         },
                     ).fail(
                         function () {
@@ -256,7 +259,7 @@ define(
                             resolve({paymentData, accessToken: auth.access_token, adminOrderViewUrl});
                         },
                         error: function (err) {
-                            console.error('Failed to fetch payment data:', error);
+                            console.error('Failed to fetch payment data:', err);
 
                             reject(err);
                         }
