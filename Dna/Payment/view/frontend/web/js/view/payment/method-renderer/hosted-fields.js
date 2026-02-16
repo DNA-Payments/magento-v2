@@ -199,7 +199,7 @@ define(
                 this.createThreeDSecureModal();
 
                 const config = {
-                    isTestMode: isTest,
+                    isTest,
                     accessToken,
                     styles: {
                         input: {
