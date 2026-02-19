@@ -10,9 +10,11 @@ define(
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Ui/js/model/messageList',
         'Magento_Vault/js/view/payment/vault-enabler',
+        'Magento_Checkout/js/model/quote',
+        'Dna_Payment/js/api',
         'Magento_Payment/js/view/payment/cc-form'
     ],
-    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, Component) {
+    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, quote, api, Component) {
         'use strict';
 
         return Component.extend({
@@ -20,7 +22,6 @@ define(
                 template: 'Dna_Payment/payment/form-hosted',
                 code: 'dna_payment',
                 hostedFieldsInstance: null,
-                orderId: null,
                 paymentResponse: null,
                 threeDModal: null,
             },
@@ -92,63 +93,38 @@ define(
 
                 if (await this.validate() && this.isPlaceOrderActionAllowed() === true) {
                     fullScreenLoader.startLoader();
-                    this.isPlaceOrderActionAllowed(false);
-                    this.getPlaceOrderDeferredObject().done(
-                        function (orderId) {
-                            self.orderId = orderId;
-                            if (!self.paymentResponse) {
-                                self.fetchPaymentData(orderId)
-                                    .then(async function (response) {
-                                        self.paymentResponse = response;
-                                        const {paymentData, accessToken} = response;
+                    self.isPlaceOrderActionAllowed(false);
 
-                                        try {
-                                            if (self.isVaultEnabled()) {
-                                                paymentData.merchantCustomData = JSON.stringify({
-                                                    storeCardOnFile: $('#' + self.getCode() + '_enable_vault').prop('checked')
-                                                });
-                                            }
+                    try {
+                        var quoteId = quote.getQuoteId();
+                        var response = await api.fetchQuotePaymentData(quoteId);
+                        var paymentData = response.paymentData;
+                        var accessToken = response.auth.access_token;
 
-                                            await self.hostedFieldsInstance.submit({
-                                                paymentData: paymentData,
-                                                token: accessToken
-                                            });
-                                            window.location.href = paymentData.paymentSettings.returnUrl;
-                                        } catch (error) {
-                                            console.error('Failed to submit hosted fields data:', error);
-
-                                            fullScreenLoader.stopLoader();
-                                            self.isPlaceOrderActionAllowed(true);
-
-                                            if (error.code === 'INVALID_CARD_DATA') {
-                                                console.log('INVALID_CARD_DATA');
-                                            } else {
-                                                self.hostedFieldsInstance.clear();
-                                            }
-
-                                            self.showError((error && error.message) || $t('Payment failed. Please try again.'));
-                                        }
-                                    })
-                                    .catch(function (error) {
-                                        fullScreenLoader.stopLoader();
-                                        self.isPlaceOrderActionAllowed(true);
-                                        self.showError($t('Failed to load payment data.'));
-                                    });
-                            }
-                        },
-                    ).fail(
-                        function () {
-                            console.log('Failed to placed order.');
-
-                            fullScreenLoader.stopLoader();
-                            self.isPlaceOrderActionAllowed(true);
-                            self.showError($t('Failed to place order.'));
+                        if (self.isVaultEnabled()) {
+                            var customData = JSON.parse(paymentData.merchantCustomData || '{}');
+                            customData.storeCardOnFile = $('#' + self.getCode() + '_enable_vault').prop('checked');
+                            paymentData.merchantCustomData = JSON.stringify(customData);
                         }
-                    );
 
-                    return true;
+                        await self.hostedFieldsInstance.submit({
+                            paymentData: paymentData,
+                            token: accessToken
+                        });
+
+                        await self.getPlaceOrderDeferredObject();
+
+                        window.location.href = paymentData.paymentSettings.returnUrl;
+                    } catch (error) {
+                        fullScreenLoader.stopLoader();
+                        self.isPlaceOrderActionAllowed(true);
+
+                        if (error.code !== 'INVALID_CARD_DATA' && self.hostedFieldsInstance) {
+                            self.hostedFieldsInstance.clear();
+                        }
+                        self.showError((error && error.message) || $t('Payment failed. Please try again.'));
+                    }
                 } else {
-                    console.log('Hosted fields validation failed.');
 
                     fullScreenLoader.stopLoader();
                     self.isPlaceOrderActionAllowed(true);
@@ -232,36 +208,6 @@ define(
                 };
 
                 return window.dnaPayments.hostedFields.create(config);
-            },
-
-            fetchPaymentData: function (orderId) {
-                return new Promise((resolve, reject) => {
-                    $.ajax({
-                        url: '/rest/V1/dna-payment/get-order-payment-data?orderId=' + orderId,
-                        type: 'get',
-                        success: function (res) {
-                            const {paymentData, auth, adminOrderViewUrl} = (function () {
-                                if (Array.isArray(res)) {
-                                    const [p, a, t, i, u] = res
-                                    return {
-                                        paymentData: p,
-                                        auth: a,
-                                        isTestMode: t,
-                                        integrationType: i,
-                                        adminOrderViewUrl: u
-                                    }
-                                }
-                                return res || {}
-                            })()
-                            resolve({paymentData, accessToken: auth.access_token, adminOrderViewUrl});
-                        },
-                        error: function (err) {
-                            console.error('Failed to fetch payment data:', error);
-
-                            reject(err);
-                        }
-                    })
-                })
             },
 
             /**

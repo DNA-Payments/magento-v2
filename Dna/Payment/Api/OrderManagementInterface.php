@@ -111,6 +111,7 @@ interface OrderManagementInterface
      * @param string $paypalCaptureStatus
      * @param string $paypalCaptureStatusReason
      * @param string $paypalOrderStatus
+     * @param string $merchantCustomData
      * @return void
      */
     public function failureOrder(
@@ -129,6 +130,7 @@ interface OrderManagementInterface
         $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
-        $paypalOrderStatus = null
+        $paypalOrderStatus = null,
+        $merchantCustomData = null
     );
 }
