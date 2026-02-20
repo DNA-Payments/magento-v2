@@ -83,6 +83,7 @@ define(
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
+                window.scrollTo({top: 0, behavior: 'smooth'});
             },
             placeOrder: async function (data, event) {
                 let self = this;
