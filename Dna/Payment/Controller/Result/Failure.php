@@ -64,7 +64,7 @@ class Failure extends Action implements ViewInterface
         $order = $_checkoutSession->getLastRealOrder();
         $status = $order->getStatus();
 
-        if ($order->getStatus() == $order::STATE_PENDING_PAYMENT) {
+        if ($order->getId() && $status == $order::STATE_PENDING_PAYMENT) {
             try {
                 $order->cancel();
                 $this->orderRepository->save($order);

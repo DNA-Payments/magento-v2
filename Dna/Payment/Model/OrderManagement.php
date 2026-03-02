@@ -911,10 +911,26 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $paymentMethod = null,
         $paypalCaptureStatus = null,
         $paypalCaptureStatusReason = null,
-        $paypalOrderStatus = null
+        $paypalOrderStatus = null,
+        $merchantCustomData = null
     )
     {
-        $order = Helpers::getOrderInfo($invoiceId);
+        $merchantCustomDataJson = json_decode($merchantCustomData ?: '{}', true);
+
+        if (isset($merchantCustomDataJson['quoteId'])) {
+            $quoteId = $merchantCustomDataJson['quoteId'];
+            $orderCollection = $this->orderCollectionFactory->create()
+                ->addFieldToFilter('quote_id', $quoteId);
+            $order = $orderCollection->getFirstItem();
+
+            if (!$order || !$order->getId()) {
+                // Order was not created (quote-based flow, payment failed before placeOrder)
+                return $invoiceId;
+            }
+            $invoiceId = $order->getIncrementId();
+        } else {
+            $order = Helpers::getOrderInfo($invoiceId);
+        }
 
         if (!$this->isDNAPaymentOrder($order)) {
             return;
