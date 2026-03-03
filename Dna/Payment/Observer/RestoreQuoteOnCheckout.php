@@ -1,0 +1,90 @@
+<?php
+
+namespace Dna\Payment\Observer;
+
+use Magento\Framework\Event\Observer;
+use Magento\Framework\Event\ObserverInterface;
+use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Sales\Model\Order;
+
+/**
+ * Restores the customer's quote on checkout page load if there is a
+ * pending-payment DNA order and the cart has been deactivated.
+ *
+ * Covers edge cases:
+ *  - Hosted-fields decline + page refresh
+ *  - Full-redirect payment page closed/abandoned by user
+ */
+class RestoreQuoteOnCheckout implements ObserverInterface
+{
+    /**
+     * @var CheckoutSession
+     */
+    private $checkoutSession;
+
+    /**
+     * @var CartRepositoryInterface
+     */
+    private $cartRepository;
+
+    public function __construct(
+        CheckoutSession $checkoutSession,
+        CartRepositoryInterface $cartRepository
+        )
+    {
+        $this->checkoutSession = $checkoutSession;
+        $this->cartRepository = $cartRepository;
+    }
+
+    /**
+     * @param Observer $observer
+     * @return void
+     */
+    public function execute(Observer $observer)
+    {
+        try {
+            $order = $this->checkoutSession->getLastRealOrder();
+            if (!$order || !$order->getId()) {
+                return;
+            }
+
+            // Only restore for DNA payment methods with pending_payment status
+            $paymentMethod = $order->getPayment() ? $order->getPayment()->getMethod() : '';
+            if (strpos($paymentMethod, 'dna_payment') === false) {
+                return;
+            }
+
+            if ($order->getState() !== Order::STATE_PENDING_PAYMENT) {
+                return;
+            }
+
+            $quoteId = $order->getQuoteId();
+            if (!$quoteId) {
+                return;
+            }
+
+            // Don't overwrite a newer active cart that has items
+            $currentQuote = $this->checkoutSession->getQuote();
+            if ($currentQuote
+            && $currentQuote->getId()
+            && $currentQuote->getIsActive()
+            && $currentQuote->getItemsCount() > 0
+            && $currentQuote->getId() != $quoteId
+            ) {
+                return;
+            }
+
+            $quote = $this->cartRepository->get($quoteId);
+            if ($quote->getId() && !$quote->getIsActive()) {
+                $quote->setIsActive(1)->setReservedOrderId(null);
+                $this->cartRepository->save($quote);
+                $this->checkoutSession->replaceQuote($quote);
+                $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
+            }
+        }
+        catch (\Exception $e) {
+        // Silently fail — don't break checkout
+        }
+    }
+}

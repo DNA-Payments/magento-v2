@@ -10,9 +10,10 @@ define(
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Ui/js/model/messageList',
         'Magento_Vault/js/view/payment/vault-enabler',
-        'Magento_Payment/js/view/payment/cc-form'
+        'Magento_Payment/js/view/payment/cc-form',
+        'Dna_Payment/js/action/restore-quote-action'
     ],
-    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, Component) {
+    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, Component, restoreQuoteAction) {
         'use strict';
 
         return Component.extend({
@@ -82,6 +83,7 @@ define(
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
+                window.scrollTo({top: 0, behavior: 'smooth'});
             },
             placeOrder: async function (data, event) {
                 let self = this;
@@ -96,7 +98,7 @@ define(
                     this.getPlaceOrderDeferredObject().done(
                         function (orderId) {
                             self.orderId = orderId;
-                            if (!self.paymentResponse) {
+                            if (!self.paymentResponse) {x
                                 self.fetchPaymentData(orderId)
                                     .then(async function (response) {
                                         self.paymentResponse = response;
@@ -126,12 +128,23 @@ define(
                                                 self.hostedFieldsInstance.clear();
                                             }
 
+                                            // Restore quote so retry can create a new order
+                                            restoreQuoteAction(self.orderId);
+                                            self.paymentResponse = null;
+                                            self.orderId = null;
+
                                             self.showError((error && error.message) || $t('Payment failed. Please try again.'));
                                         }
                                     })
                                     .catch(function (error) {
                                         fullScreenLoader.stopLoader();
                                         self.isPlaceOrderActionAllowed(true);
+
+                                        // Restore quote so retry can create a new order
+                                        restoreQuoteAction(self.orderId);
+                                        self.paymentResponse = null;
+                                        self.orderId = null;
+
                                         self.showError($t('Failed to load payment data.'));
                                     });
                             }

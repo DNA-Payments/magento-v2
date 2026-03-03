@@ -6,10 +6,14 @@ define(
         'jquery',
         'Dna_Payment/js/base-method-renderer',
         'Magento_Checkout/js/model/full-screen-loader',
+        'Magento_Checkout/js/action/redirect-on-success',
+        'Magento_Checkout/js/model/payment/additional-validators',
+        'Dna_Payment/js/action/restore-quote-action',
         'mage/translate',
-        'dna-google-pay',
+        'Dna_Payment/js/api',
+        'dna-google-pay'
     ],
-    function ($, Component, fullScreenLoader, $t, dnaGooglePay) {
+    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, api, dnaGooglePay) {
         'use strict';
 
         return Component.extend({
@@ -26,13 +30,43 @@ define(
                                     fullScreenLoader.startLoader();
                                     $('#' + self.getCode() + '_warning_container').hide();
                                 },
+                                onBeforeProcessPayment: () => {
+                                    return new Promise((resolve, reject) => {
+                                        if (!additionalValidators.validate()) {
+                                            fullScreenLoader.stopLoader();
+                                            reject(new Error('Validation failed'));
+                                            return;
+                                        }
+                                        self.getPlaceOrderDeferredObject()
+                                            .done(function (orderId) {
+                                                self.orderId = orderId;
+                                                api.fetchOrderPaymentData(orderId)
+                                                    .then(function (response) {
+                                                        resolve({
+                                                            paymentData: response.paymentData,
+                                                            token: response.auth ? response.auth.access_token : undefined
+                                                        });
+                                                    })
+                                                    .catch(function (error) {
+                                                        restoreQuoteAction(self.orderId);
+                                                        self.orderId = null;
+                                                        fullScreenLoader.stopLoader();
+                                                        reject(error);
+                                                    });
+                                            })
+                                            .fail(function (response) {
+                                                fullScreenLoader.stopLoader();
+                                                reject(response);
+                                            });
+                                    });
+                                },
                                 onPaymentSuccess: (result) => {
                                     fullScreenLoader.stopLoader();
-
-                                    self.placeOrder();
+                                    redirectOnSuccessAction.execute();
                                 },
                                 onCancel: () => {
-                                    fullScreenLoader.stopLoader();
+                                    fullScreenLoader.startLoader();
+                                    window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
                                 },
                                 onError: (err) => {
                                     console.log('GooglePayComponent error', err);
@@ -45,7 +79,8 @@ define(
                                     }
 
                                     self.showError(message);
-                                    fullScreenLoader.stopLoader();
+                                    fullScreenLoader.startLoader();
+                                    window.location.href = paymentData.paymentSettings.failureReturnUrl;
                                 },
                                 onLoad: () => {
                                     fullScreenLoader.stopLoader();

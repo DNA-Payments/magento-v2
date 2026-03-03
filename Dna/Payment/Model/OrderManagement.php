@@ -1045,4 +1045,71 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         return isset(self::$ccMapper[$cardTypeCode]) ? self::$ccMapper[$cardTypeCode] : null;
     }
+
+    /**
+     * Restore the quote after a payment failure so the customer can retry.
+     *
+     * @param string|null $orderId
+     * @return bool
+     */
+    public function restoreQuote($orderId = null)
+    {
+        try {
+            $order = null;
+
+            // If orderId passed from frontend, look up directly (works for guest REST)
+            if ($orderId) {
+                $order = Helpers::getOrderInfo($orderId);
+            }
+
+            // Fallback: use checkout session (works for browser/controller context)
+            if (!$order || !$order->getId()) {
+                $order = $this->checkoutSession->getLastRealOrder();
+            }
+
+            if (!$order || !$order->getId()) {
+                return false;
+            }
+
+            // Only restore for DNA payment orders in pending_payment state
+            $paymentMethod = $order->getPayment() ? $order->getPayment()->getMethod() : '';
+            if (strpos($paymentMethod, 'dna_payment') === false) {
+                return false;
+            }
+
+            if ($order->getState() !== Order::STATE_PENDING_PAYMENT) {
+                return false;
+            }
+
+            return $this->restoreQuoteById($order->getQuoteId(), $order->getIncrementId());
+        } catch (\Exception $e) {
+            $this->dnaLogger->logException('Failed to restore quote', $e);
+        }
+        return false;
+    }
+
+    /**
+     * Restore a specific quote by its ID.
+     *
+     * @param int $quoteId
+     * @param string $lastRealOrderId
+     * @return bool
+     */
+    private function restoreQuoteById($quoteId, $lastRealOrderId)
+    {
+        try {
+            $quote = $this->cartRepository->get($quoteId);
+            if ($quote->getId()) {
+                $quote->setIsActive(1)->setReservedOrderId(null);
+                $this->cartRepository->save($quote);
+                $this->checkoutSession->replaceQuote($quote)->setLastRealOrderId($lastRealOrderId);
+                return true;
+            }
+        } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+            $this->dnaLogger->logException('Quote not found for restoreQuoteById, quoteId=' . $quoteId, $e);
+        } catch (\Exception $e) {
+            $this->dnaLogger->logException('Failed restoreQuoteById, quoteId=' . $quoteId, $e);
+        }
+        return false;
+    }
 }
