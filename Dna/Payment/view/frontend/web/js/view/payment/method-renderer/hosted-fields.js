@@ -83,7 +83,7 @@ define(
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
-                window.scrollTo({top: 0, behavior: 'smooth'});
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             },
             placeOrder: async function (data, event) {
                 let self = this;
@@ -98,11 +98,11 @@ define(
                     this.getPlaceOrderDeferredObject().done(
                         function (orderId) {
                             self.orderId = orderId;
-                            if (!self.paymentResponse) {x
+                            if (!self.paymentResponse) {
                                 self.fetchPaymentData(orderId)
                                     .then(async function (response) {
                                         self.paymentResponse = response;
-                                        const {paymentData, accessToken} = response;
+                                        const { paymentData, accessToken } = response;
 
                                         try {
                                             if (self.isVaultEnabled()) {
@@ -170,7 +170,7 @@ define(
 
                 return false;
             },
-            createThreeDSecureModal: function() {
+            createThreeDSecureModal: function () {
                 const modalId = 'dna-payment-three-d-modal';
                 const modalClassName = 'dna-payment-modal-content';
                 let modal = document.getElementById(modalId);
@@ -204,7 +204,7 @@ define(
              * Initialize the DNA Payments hosted fields asynchronously
              */
             initHostedFields: async function (self) {
-                const {accessToken, isTest} = await this.fetchDumbToken();
+                const { accessToken, isTest } = await this.fetchDumbToken();
 
                 this.createThreeDSecureModal();
 
@@ -253,7 +253,7 @@ define(
                         url: '/rest/V1/dna-payment/get-order-payment-data?orderId=' + orderId,
                         type: 'get',
                         success: function (res) {
-                            const {paymentData, auth, adminOrderViewUrl} = (function () {
+                            const { paymentData, auth, adminOrderViewUrl } = (function () {
                                 if (Array.isArray(res)) {
                                     const [p, a, t, i, u] = res
                                     return {
@@ -266,7 +266,7 @@ define(
                                 }
                                 return res || {}
                             })()
-                            resolve({paymentData, accessToken: auth.access_token, adminOrderViewUrl});
+                            resolve({ paymentData, accessToken: auth.access_token, adminOrderViewUrl });
                         },
                         error: function (err) {
                             console.error('Failed to fetch payment data:', error);
@@ -287,7 +287,7 @@ define(
                             const result = (function () {
                                 if (Array.isArray(res)) {
                                     const [a, t] = res
-                                    return {accessToken: a, isTest: t}
+                                    return { accessToken: a, isTest: t }
                                 }
                                 return res || {}
                             })()
