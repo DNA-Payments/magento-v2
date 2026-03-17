@@ -300,6 +300,47 @@ define([
             let modal = document.getElementById(modalId);
             let modalContent = document.querySelector('#' + modalId + ' .' + modalClassName);
 
+            if (!document.getElementById('dna-payment-modal-styles')) {
+                const styleBlock = document.createElement("style");
+                styleBlock.id = "dna-payment-modal-styles";
+                styleBlock.innerHTML = `
+                    body.dna-3ds-active {
+                        overflow: hidden !important;
+                    }
+                    .dna-payment-modal {
+                        display: none;
+                        position: fixed !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        width: 100vw !important;
+                        height: 100vh !important;
+                        z-index: 2147483647 !important;
+                        background: rgba(0, 0, 0, 0.6) !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                    }
+                    .dna-payment-modal-content {
+                        position: relative !important;
+                        width: 100% !important;
+                        max-width: 500px !important;
+                        height: 100% !important;
+                        max-height: 600px !important;
+                        background: #fff !important;
+                        border-radius: 8px !important;
+                        box-shadow: 0 4px 24px rgba(0,0,0,0.2) !important;
+                        margin: auto !important;
+                        overflow: auto !important;
+                    }
+                    .dna-payment-modal iframe {
+                        width: 100% !important;
+                        height: 100% !important;
+                        border: none !important;
+                        border-radius: 8px !important;
+                    }
+                `;
+                document.head.appendChild(styleBlock);
+            }
+
             if (!modal) {
                 modal = document.createElement("div");
                 modal.id = modalId;
@@ -316,10 +357,12 @@ define([
             this.threeDModal = {
                 content: modalContent,
                 open: function () {
-                    modal.style.display = "block";
+                    modal.style.setProperty('display', 'flex', 'important');
+                    document.body.classList.add('dna-3ds-active');
                 },
                 close: function () {
-                    modal.style.display = "none";
+                    modal.style.setProperty('display', 'none', 'important');
+                    document.body.classList.remove('dna-3ds-active');
                 }
             };
         },

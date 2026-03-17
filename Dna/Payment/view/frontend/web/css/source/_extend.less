@@ -1,156 +1,135 @@
-#dna_payment_hosted_fields_form {
-  .field {
-    margin: 0 0 20px 0;
+// #dna_payment_hosted_fields_form {
+//   .field {
+//     margin: 0 0 20px 0;
 
-    &.required {
-      .label {
-        font-weight: @font-weight__semibold;
+//     &.required {
+//       .label {
+//         font-weight: @font-weight__semibold;
 
-        &:after {
-          content: '*';
-          color: #e02b27;
-          .lib-font-size(12px);
-          margin: 0 0 0 5px;
-        }
-      }
-    }
+//         &:after {
+//           content: '*';
+//           color: #e02b27;
+//           .lib-font-size(12px);
+//           margin: 0 0 0 5px;
+//         }
+//       }
+//     }
 
-    .hosted-control {
-      background: #ffffff;
-      border: 1px solid #c2c2c2;
-      padding: 8px 15px;
-      box-sizing: content-box;
-      height: 32px;
-      margin: 8px 0 0 0;
+//     .hosted-control {
+//       background: #ffffff;
+//       border: 1px solid #c2c2c2;
+//       padding: 8px 15px;
+//       box-sizing: content-box;
+//       height: 32px;
+//       margin: 8px 0 0 0;
 
-      &.dna-payments-hosted-field-invalid:not(.dna-payments-hosted-field-focused) ~ .hosted-error {
-        height: auto;
-        opacity: 1;
-      }
+//       &.dna-payments-hosted-field-invalid:not(.dna-payments-hosted-field-focused)~.hosted-error {
+//         height: auto;
+//         opacity: 1;
+//       }
 
-      &.hosted-cc-number {
-        padding-left: 68px;
-      }
-    }
+//       &.hosted-cc-number {
+//         padding-left: 68px;
+//       }
+//     }
 
-    .hosted-error {
-      clear: both;
-      color: #e02b27;
-      .lib-font-size(12px);
-      height: 0;
-      margin-top: 7px;
-      opacity: 0;
-    }
-  }
-}
+//     .hosted-error {
+//       clear: both;
+//       color: #e02b27;
+//       .lib-font-size(12px);
+//       height: 0;
+//       margin-top: 7px;
+//       opacity: 0;
+//     }
+//   }
+// }
 
-#payment-method-dna-payment-cc-vault {
-  .field {
-    &.required {
-      .label {
-        font-weight: @font-weight__semibold;
+// #payment-method-dna-payment-cc-vault {
+//   .field {
+//     &.required {
+//       .label {
+//         font-weight: @font-weight__semibold;
 
-        &:after {
-          content: '*';
-          color: #e02b27;
-          .lib-font-size(12px);
-          margin: 0 0 0 5px;
-        }
-      }
-    }
+//         &:after {
+//           content: '*';
+//           color: #e02b27;
+//           .lib-font-size(12px);
+//           margin: 0 0 0 5px;
+//         }
+//       }
+//     }
 
-    .hosted-control {
-      background: #ffffff;
-      border: 1px solid #c2c2c2;
-      padding: 8px 15px;
-      box-sizing: content-box;
-      height: 32px;
-      margin: 8px 0 0 0;
-      width: 4rem;
+//     .hosted-control {
+//       background: #ffffff;
+//       border: 1px solid #c2c2c2;
+//       padding: 8px 15px;
+//       box-sizing: content-box;
+//       height: 32px;
+//       margin: 8px 0 0 0;
+//       width: 4rem;
 
-      &.dna-payments-hosted-field-invalid:not(.dna-payments-hosted-field-focused) ~ .hosted-error {
-        height: auto;
-        opacity: 1;
-      }
-    }
+//       &.dna-payments-hosted-field-invalid:not(.dna-payments-hosted-field-focused)~.hosted-error {
+//         height: auto;
+//         opacity: 1;
+//       }
+//     }
 
-    .hosted-error {
-      clear: both;
-      color: #e02b27;
-      .lib-font-size(12px);
-      height: 0;
-      margin-top: 7px;
-      opacity: 0;
-    }
-  }
-}
+//     .hosted-error {
+//       clear: both;
+//       color: #e02b27;
+//       .lib-font-size(12px);
+//       height: 0;
+//       margin-top: 7px;
+//       opacity: 0;
+//     }
+//   }
+// }
 
-.dna-payment-modal {
-  display: none;
-  position: fixed;
-  z-index: 100000;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 100%;
-  overflow: auto;
-  background-color: rgb(0, 0, 0);
-  background-color: rgba(0, 0, 0, 0.4);
-}
+// .dna-payment-card-control {
+//   position: relative;
+// }
 
-.dna-payment-modal-content {
-  background-color: #fefefe;
-  margin: 15% auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 60%;
-}
+// .dna-payment-credit-card-none-selected {
+//   position: absolute;
+//   z-index: 10;
+//   left: 10px;
+// }
 
-.dna-payment-card-control {
-  position: relative;
-}
+// .dna-payment-credit-card-selected {
+//   position: absolute;
+//   z-index: 10;
+//   left: 10px;
+//   top: 10px;
+// }
 
-.dna-payment-credit-card-none-selected {
-  position: absolute;
-  z-index: 10;
-  left: 10px;
-}
+// .dna-payment-method-warning-container {
+//   background-color: #fdeded;
+//   border: 1px solid #d9534f;
+//   border-radius: 4px;
+//   padding: 15px;
+//   margin-top: 10px;
+// }
 
-.dna-payment-credit-card-selected {
-  position: absolute;
-  z-index: 10;
-  left: 10px;
-  top: 10px;
-}
+// .dna-payment-method-warning-text {
+//   font-size: 16px;
+//   font-weight: normal;
+// }
 
-.dna-payment-method-warning-container {
-  background-color: #fdeded;
-  border: 1px solid #d9534f;
-  border-radius: 4px;
-  padding: 15px;
-  margin-top: 10px;
-}
+// .dna-payment-method-container {
+//   height: 40px;
+//   position: relative;
+// }
 
-.dna-payment-method-warning-text {
-  font-size: 16px;
-  font-weight: normal;
-}
+// .dna-payment-method-loader {
+//   position: absolute;
+//   top: 0;
+//   left: 0;
+//   width: 100%;
+//   height: 100%;
+//   z-index: -1;
+// }
 
-.dna-payment-method-container {
-  height: 40px;
-  position: relative;
-}
-
-.dna-payment-method-loader {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-}
-
-.dna-payment-method-container .loading-mask img {
-  height: 24px;
-  width: 24px;
-}
+// .dna-payment-method-container .loading-mask img {
+//   height: 24px;
+//   width: 24px;
+// }
