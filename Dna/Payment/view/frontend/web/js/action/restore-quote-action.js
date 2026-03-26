@@ -11,8 +11,9 @@
  *   restoreQuoteAction(callback);                 // callback only (session fallback)
  */
 define([
-    'mage/storage'
-], function (storage) {
+    'mage/storage',
+    'Magento_Customer/js/customer-data'
+], function (storage, customerData) {
     'use strict';
 
     return function (orderIdOrCallback, callback) {
@@ -30,6 +31,9 @@ define([
             'rest/V1/dna-payment/restore-quote',
             JSON.stringify({ orderId: orderId })
         ).done(function () {
+            customerData.invalidate(['cart', 'checkout-data']);
+            customerData.reload(['cart'], true);
+
             if (typeof cb === 'function') {
                 cb();
             }
