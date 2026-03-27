@@ -775,7 +775,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             $quoteId = $merchantCustomDataJson['quoteId'];
 
             $orderCollection = $this->orderCollectionFactory->create()
-                ->addFieldToFilter('quote_id', $quoteId);
+                ->addFieldToFilter('quote_id', $quoteId)
+                ->addFieldToFilter('state', ['neq' => \Magento\Sales\Model\Order::STATE_CANCELED])
+                ->setOrder('entity_id', \Magento\Framework\Data\Collection::SORT_ORDER_DESC);
             $order = $orderCollection->getFirstItem();
 
             if (!$order || !$order->getId()) {
@@ -956,7 +958,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     ], false);
                 }
 
-                $this->setOrderStatus($invoiceId, $order::STATE_CANCELED);
+                $this->cancelOrder($invoiceId);
             } else if (!empty($paypalCaptureStatus)) {
                 $this->savePayPalOrderDetail($order, [
                     'paypalCaptureStatus' => $paypalCaptureStatus,
@@ -1079,6 +1081,12 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
             if ($order->getState() !== Order::STATE_PENDING_PAYMENT) {
                 return false;
+            }
+
+            if ($order->canCancel()) {
+                $order->cancel();
+                $this->orderRepository->save($order);
+                $this->dnaLogger->info('Canceled ghost pending_payment order during restoreQuote', ['order_id' => $order->getIncrementId()]);
             }
 
             return $this->restoreQuoteById($order->getQuoteId(), $order->getIncrementId());
