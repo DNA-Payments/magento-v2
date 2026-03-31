@@ -1059,9 +1059,14 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         try {
             $order = null;
 
-            // If orderId passed from frontend, look up directly (works for guest REST)
+            // If orderId passed from frontend, look up by entity ID
             if ($orderId) {
-                $order = Helpers::getOrderInfo($orderId);
+                try {
+                    $order = $this->orderRepository->get($orderId);
+                } catch (\Exception $e) {
+                    $this->dnaLogger->info('restoreQuote: order not found by entity ID, trying incrementId', ['orderId' => $orderId]);
+                    $order = Helpers::getOrderInfo($orderId);
+                }
             }
 
             // Fallback: use checkout session (works for browser/controller context)

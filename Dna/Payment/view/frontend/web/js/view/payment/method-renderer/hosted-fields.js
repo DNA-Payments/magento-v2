@@ -184,19 +184,44 @@ define(
                     modalContent = document.createElement("div");
                     modalContent.className = "dna-payment-modal-content";
 
+                    var closeBtn = document.createElement("button");
+                    closeBtn.className = "dna-payment-modal-close";
+                    closeBtn.type = "button";
+                    closeBtn.innerHTML = "&times;";
+                    closeBtn.setAttribute("aria-label", "Close");
+
+                    modalContent.appendChild(closeBtn);
                     modal.appendChild(modalContent);
 
                     document.body.appendChild(modal);
                 }
 
+                var self = this;
+
                 this.threeDModal = {
                     content: modalContent,
                     open: function () {
-                        modal.style.display = "block";
+                        modal.classList.add("open");
                     },
                     close: function () {
-                        modal.style.display = "none";
+                        modal.classList.remove("open");
                     }
+                };
+
+                modal.querySelector('.dna-payment-modal-close').onclick = function () {
+                    self.threeDModal.close();
+                    fullScreenLoader.stopLoader();
+                    self.isPlaceOrderActionAllowed(true);
+
+                    if (self.hostedFieldsInstance) {
+                        self.hostedFieldsInstance.clear();
+                    }
+
+                    restoreQuoteAction(self.orderId);
+                    self.paymentResponse = null;
+                    self.orderId = null;
+
+                    self.showError($t('Payment was cancelled.'));
                 };
             },
 
@@ -269,7 +294,7 @@ define(
                             resolve({ paymentData, accessToken: auth.access_token, adminOrderViewUrl });
                         },
                         error: function (err) {
-                            console.error('Failed to fetch payment data:', error);
+                            console.error('Failed to fetch payment data:', err);
 
                             reject(err);
                         }

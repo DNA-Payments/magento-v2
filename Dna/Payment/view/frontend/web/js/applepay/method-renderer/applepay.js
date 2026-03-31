@@ -55,7 +55,6 @@ define(
                                             })
                                             .fail(function (response) {
                                                 fullScreenLoader.stopLoader();
-                                                // self.isPlaceOrderActionAllowed(true);
                                                 reject(response);
                                             });
                                     });
@@ -66,7 +65,10 @@ define(
                                 },
                                 onCancel: () => {
                                     fullScreenLoader.startLoader();
-                                    window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
+                                    restoreQuoteAction(self.orderId, function () {
+                                        self.orderId = null;
+                                        window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
+                                    });
                                 },
                                 onError: (err) => {
                                     console.log('ApplePayComponent error', err);
@@ -80,7 +82,10 @@ define(
 
                                     self.showError(message);
                                     fullScreenLoader.startLoader();
-                                    window.location.href = paymentData.paymentSettings.failureReturnUrl;
+                                    restoreQuoteAction(self.orderId, function () {
+                                        self.orderId = null;
+                                        window.location.href = paymentData.paymentSettings.failureReturnUrl;
+                                    });
                                 },
                                 onLoad: () => {
                                     fullScreenLoader.stopLoader();

@@ -22,25 +22,21 @@ define([
 
         if (typeof orderIdOrCallback === 'function') {
             cb = orderIdOrCallback;
-        } else if (typeof orderIdOrCallback === 'string') {
-            orderId = orderIdOrCallback;
+        } else {
+            orderId = orderIdOrCallback || null;
             cb = callback;
         }
+
+        customerData.invalidate(['cart']);
 
         return storage.post(
             'rest/V1/dna-payment/restore-quote',
             JSON.stringify({ orderId: orderId })
-        ).done(function () {
-            customerData.invalidate(['cart', 'checkout-data']);
-            customerData.reload(['cart'], true);
-
+        ).always(function () {
             if (typeof cb === 'function') {
                 cb();
-            }
-        }).fail(function (err) {
-            console.error('DNA Payments: Failed to restore quote', err);
-            if (typeof cb === 'function') {
-                cb();
+            } else {
+                customerData.reload(['cart'], true);
             }
         });
     };

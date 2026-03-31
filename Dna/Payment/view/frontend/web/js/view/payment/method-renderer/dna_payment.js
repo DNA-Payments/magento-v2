@@ -13,7 +13,8 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
-        'Magento_Checkout/js/model/full-screen-loader'
+        'Magento_Checkout/js/model/full-screen-loader',
+        'Dna_Payment/js/action/restore-quote-action'
     ],
     function (
         ko,
@@ -23,7 +24,8 @@ define(
         Component,
         globalMessageList,
         quote,
-        fullScreenLoader
+        fullScreenLoader,
+        restoreQuoteAction
     ) {
         'use strict';
         return Component.extend({
@@ -60,11 +62,15 @@ define(
                             events: {
                                 cancelled: () => {
                                     fullScreenLoader.startLoader();
-                                    window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1'
+                                    restoreQuoteAction(function () {
+                                        window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1'
+                                    });
                                 },
                                 declined: () => {
                                     fullScreenLoader.startLoader();
-                                    window.location.href = paymentData.paymentSettings.failureReturnUrl
+                                    restoreQuoteAction(function () {
+                                        window.location.href = paymentData.paymentSettings.failureReturnUrl
+                                    });
                                 }
                             }
                         });
