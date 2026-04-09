@@ -48,4 +48,10 @@
             <resource ref="anonymous" />
         </resources>
     </route>
+    <route url="/V1/dna-payment/restore-quote" method="POST">
+        <service class="Dna\Payment\Api\OrderManagementInterface" method="restoreQuote"/>
+        <resources>
+            <resource ref="anonymous" />
+        </resources>
+    </route>
 </routes>

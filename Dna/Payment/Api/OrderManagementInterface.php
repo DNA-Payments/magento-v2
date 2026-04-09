@@ -131,4 +131,12 @@ interface OrderManagementInterface
         $paypalCaptureStatusReason = null,
         $paypalOrderStatus = null
     );
+
+    /**
+     * Restore the quote after a payment failure so the customer can retry.
+     *
+     * @param string|null $orderId
+     * @return bool
+     */
+    public function restoreQuote($orderId = null);
 }

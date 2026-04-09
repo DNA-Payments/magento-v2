@@ -88,22 +88,61 @@
 .dna-payment-modal {
   display: none;
   position: fixed;
-  z-index: 100000;
-  left: 0;
   top: 0;
-  height: 100%;
-  width: 100%;
-  overflow: auto;
-  background-color: rgb(0, 0, 0);
-  background-color: rgba(0, 0, 0, 0.4);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 100000;
+  transition: 200ms ease-in-out;
 }
 
 .dna-payment-modal-content {
-  background-color: #fefefe;
-  margin: 15% auto;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 100000;
+  background: white;
+  border-radius: 5px;
+  box-shadow: 0px 5px 15px 0px rgba(0, 0, 0, 0.34);
+  width: 500px;
+  max-width: 90%;
+  max-height: 95%;
+  transition: 200ms ease-in-out;
+  overflow: auto;
   padding: 20px;
-  border: 1px solid #888;
-  width: 60%;
+  box-sizing: border-box;
+}
+
+.dna-payment-modal.open {
+  display: block;
+}
+
+.dna-payment-modal.open .dna-payment-modal-content {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.dna-payment-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  padding: 4px 8px;
+  z-index: 1;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+.dna-payment-modal-content {
+  position: relative;
 }
 
 .dna-payment-card-control {

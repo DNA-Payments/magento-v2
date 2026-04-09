@@ -775,7 +775,9 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             $quoteId = $merchantCustomDataJson['quoteId'];
 
             $orderCollection = $this->orderCollectionFactory->create()
-                ->addFieldToFilter('quote_id', $quoteId);
+                ->addFieldToFilter('quote_id', $quoteId)
+                ->addFieldToFilter('state', ['neq' => \Magento\Sales\Model\Order::STATE_CANCELED])
+                ->setOrder('entity_id', \Magento\Framework\Data\Collection::SORT_ORDER_DESC);
             $order = $orderCollection->getFirstItem();
 
             if (!$order || !$order->getId()) {
@@ -956,7 +958,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                     ], false);
                 }
 
-                $this->setOrderStatus($invoiceId, $order::STATE_CANCELED);
+                $this->cancelOrder($invoiceId);
             } else if (!empty($paypalCaptureStatus)) {
                 $this->savePayPalOrderDetail($order, [
                     'paypalCaptureStatus' => $paypalCaptureStatus,
@@ -1044,5 +1046,83 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $cardTypeCode = str_replace([' ', '(', ')'], ['_', '', ''], strtolower($cardType));
 
         return isset(self::$ccMapper[$cardTypeCode]) ? self::$ccMapper[$cardTypeCode] : null;
+    }
+
+    /**
+     * Restore the quote after a payment failure so the customer can retry.
+     *
+     * @param string|null $orderId
+     * @return bool
+     */
+    public function restoreQuote($orderId = null)
+    {
+        try {
+            $order = null;
+
+            // If orderId passed from frontend, look up by entity ID
+            if ($orderId) {
+                try {
+                    $order = $this->orderRepository->get($orderId);
+                } catch (\Exception $e) {
+                    $this->dnaLogger->info('restoreQuote: order not found by entity ID, trying incrementId', ['orderId' => $orderId]);
+                    $order = Helpers::getOrderInfo($orderId);
+                }
+            }
+
+            // Fallback: use checkout session (works for browser/controller context)
+            if (!$order || !$order->getId()) {
+                $order = $this->checkoutSession->getLastRealOrder();
+            }
+
+            if (!$order || !$order->getId()) {
+                return false;
+            }
+
+            // Only restore for DNA payment orders in pending_payment state
+            $paymentMethod = $order->getPayment() ? $order->getPayment()->getMethod() : '';
+            if (strpos($paymentMethod, 'dna_payment') === false) {
+                return false;
+            }
+
+            if ($order->getState() !== Order::STATE_PENDING_PAYMENT) {
+                return false;
+            }
+
+            if ($order->canCancel()) {
+                $order->cancel();
+                $this->orderRepository->save($order);
+                $this->dnaLogger->info('Canceled ghost pending_payment order during restoreQuote', ['order_id' => $order->getIncrementId()]);
+            }
+
+            return $this->restoreQuoteById($order->getQuoteId(), $order->getIncrementId());
+        } catch (\Exception $e) {
+            $this->dnaLogger->logException('Failed to restore quote', $e);
+        }
+        return false;
+    }
+
+    /**
+     * Restore a specific quote by its ID.
+     *
+     * @param int $quoteId
+     * @param string $lastRealOrderId
+     * @return bool
+     */
+    private function restoreQuoteById($quoteId, $lastRealOrderId)
+    {
+        try {
+            $quote = $this->cartRepository->get($quoteId);
+            if ($quote->getId()) {
+                $quote->setIsActive(1)->setReservedOrderId(null);
+                $this->cartRepository->save($quote);
+                $this->checkoutSession->replaceQuote($quote)->setLastRealOrderId($lastRealOrderId);
+                return true;
+            }
+        } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+            $this->dnaLogger->logException('Quote not found for restoreQuoteById, quoteId=' . $quoteId, $e);
+        } catch (\Exception $e) {
+            $this->dnaLogger->logException('Failed restoreQuoteById, quoteId=' . $quoteId, $e);
+        }
+        return false;
     }
 }

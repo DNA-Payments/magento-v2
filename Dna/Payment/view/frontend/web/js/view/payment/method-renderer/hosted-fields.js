@@ -10,9 +10,10 @@ define(
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Ui/js/model/messageList',
         'Magento_Vault/js/view/payment/vault-enabler',
-        'Magento_Payment/js/view/payment/cc-form'
+        'Magento_Payment/js/view/payment/cc-form',
+        'Dna_Payment/js/action/restore-quote-action'
     ],
-    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, Component) {
+    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, Component, restoreQuoteAction) {
         'use strict';
 
         return Component.extend({
@@ -82,6 +83,7 @@ define(
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             },
             placeOrder: async function (data, event) {
                 let self = this;
@@ -100,7 +102,7 @@ define(
                                 self.fetchPaymentData(orderId)
                                     .then(async function (response) {
                                         self.paymentResponse = response;
-                                        const {paymentData, accessToken} = response;
+                                        const { paymentData, accessToken } = response;
 
                                         try {
                                             if (self.isVaultEnabled()) {
@@ -126,12 +128,23 @@ define(
                                                 self.hostedFieldsInstance.clear();
                                             }
 
+                                            // Restore quote so retry can create a new order
+                                            restoreQuoteAction(self.orderId);
+                                            self.paymentResponse = null;
+                                            self.orderId = null;
+
                                             self.showError((error && error.message) || $t('Payment failed. Please try again.'));
                                         }
                                     })
                                     .catch(function (error) {
                                         fullScreenLoader.stopLoader();
                                         self.isPlaceOrderActionAllowed(true);
+
+                                        // Restore quote so retry can create a new order
+                                        restoreQuoteAction(self.orderId);
+                                        self.paymentResponse = null;
+                                        self.orderId = null;
+
                                         self.showError($t('Failed to load payment data.'));
                                     });
                             }
@@ -157,7 +170,7 @@ define(
 
                 return false;
             },
-            createThreeDSecureModal: function() {
+            createThreeDSecureModal: function () {
                 const modalId = 'dna-payment-three-d-modal';
                 const modalClassName = 'dna-payment-modal-content';
                 let modal = document.getElementById(modalId);
@@ -171,19 +184,44 @@ define(
                     modalContent = document.createElement("div");
                     modalContent.className = "dna-payment-modal-content";
 
+                    var closeBtn = document.createElement("button");
+                    closeBtn.className = "dna-payment-modal-close";
+                    closeBtn.type = "button";
+                    closeBtn.innerHTML = "&times;";
+                    closeBtn.setAttribute("aria-label", "Close");
+
+                    modalContent.appendChild(closeBtn);
                     modal.appendChild(modalContent);
 
                     document.body.appendChild(modal);
                 }
 
+                var self = this;
+
                 this.threeDModal = {
                     content: modalContent,
                     open: function () {
-                        modal.style.display = "block";
+                        modal.classList.add("open");
                     },
                     close: function () {
-                        modal.style.display = "none";
+                        modal.classList.remove("open");
                     }
+                };
+
+                modal.querySelector('.dna-payment-modal-close').onclick = function () {
+                    self.threeDModal.close();
+                    fullScreenLoader.stopLoader();
+                    self.isPlaceOrderActionAllowed(true);
+
+                    if (self.hostedFieldsInstance) {
+                        self.hostedFieldsInstance.clear();
+                    }
+
+                    restoreQuoteAction(self.orderId);
+                    self.paymentResponse = null;
+                    self.orderId = null;
+
+                    self.showError($t('Payment was cancelled.'));
                 };
             },
 
@@ -191,7 +229,7 @@ define(
              * Initialize the DNA Payments hosted fields asynchronously
              */
             initHostedFields: async function (self) {
-                const {accessToken, isTest} = await this.fetchDumbToken();
+                const { accessToken, isTest } = await this.fetchDumbToken();
 
                 this.createThreeDSecureModal();
 
@@ -240,7 +278,7 @@ define(
                         url: '/rest/V1/dna-payment/get-order-payment-data?orderId=' + orderId,
                         type: 'get',
                         success: function (res) {
-                            const {paymentData, auth, adminOrderViewUrl} = (function () {
+                            const { paymentData, auth, adminOrderViewUrl } = (function () {
                                 if (Array.isArray(res)) {
                                     const [p, a, t, i, u] = res
                                     return {
@@ -253,10 +291,10 @@ define(
                                 }
                                 return res || {}
                             })()
-                            resolve({paymentData, accessToken: auth.access_token, adminOrderViewUrl});
+                            resolve({ paymentData, accessToken: auth.access_token, adminOrderViewUrl });
                         },
                         error: function (err) {
-                            console.error('Failed to fetch payment data:', error);
+                            console.error('Failed to fetch payment data:', err);
 
                             reject(err);
                         }
@@ -274,7 +312,7 @@ define(
                             const result = (function () {
                                 if (Array.isArray(res)) {
                                     const [a, t] = res
-                                    return {accessToken: a, isTest: t}
+                                    return { accessToken: a, isTest: t }
                                 }
                                 return res || {}
                             })()

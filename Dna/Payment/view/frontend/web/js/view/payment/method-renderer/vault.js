@@ -8,6 +8,9 @@ define([
     'dnaPaymentsHostedFields',
     'Magento_Checkout/js/model/full-screen-loader',
     'mage/storage',
+    'Dna_Payment/js/action/restore-quote-action',
+    'mage/translate',
+    'Magento_Ui/js/model/messageList',
 ], function (
     $,
     VaultComponent,
@@ -15,6 +18,9 @@ define([
     hostedFields,
     fullScreenLoader,
     storage,
+    restoreQuoteAction,
+    $t,
+    globalMessageList,
 ) {
     'use strict';
 
@@ -27,6 +33,7 @@ define([
             hostedFieldsInstance: null,
             threeDModal: null,
             paymentResponse: null,
+            orderId: null,
         },
 
         initialize: function () {
@@ -209,6 +216,7 @@ define([
                 this.isPlaceOrderActionAllowed(false);
                 this.getPlaceOrderDeferredObject().done(
                     function (orderId) {
+                        self.orderId = orderId;
                         if (!self.paymentResponse) {
                             self.fetchPaymentData(orderId)
                                 .then(async function (response) {
@@ -232,6 +240,12 @@ define([
                                         } else {
                                             self.hostedFieldsInstance.clear();
                                         }
+
+                                        restoreQuoteAction(self.orderId);
+                                        self.paymentResponse = null;
+                                        self.orderId = null;
+
+                                        self.showError((error && error.message) || $t('Payment failed. Please try again.'));
                                     }
                                 })
                                 .catch(function (error) {
@@ -239,6 +253,12 @@ define([
 
                                     fullScreenLoader.stopLoader();
                                     self.isPlaceOrderActionAllowed(true);
+
+                                    restoreQuoteAction(self.orderId);
+                                    self.paymentResponse = null;
+                                    self.orderId = null;
+
+                                    self.showError($t('Failed to load payment data.'));
                                 });
                         }
                     },
@@ -248,6 +268,7 @@ define([
 
                         fullScreenLoader.stopLoader();
                         self.isPlaceOrderActionAllowed(true);
+                        self.showError($t('Failed to place order.'));
                     }
                 );
 
@@ -308,20 +329,51 @@ define([
                 modalContent = document.createElement("div");
                 modalContent.className = "dna-payment-modal-content";
 
+                var closeBtn = document.createElement("button");
+                closeBtn.className = "dna-payment-modal-close";
+                closeBtn.type = "button";
+                closeBtn.innerHTML = "&times;";
+                closeBtn.setAttribute("aria-label", "Close");
+
+                modalContent.appendChild(closeBtn);
                 modal.appendChild(modalContent);
 
                 document.body.appendChild(modal);
             }
 
+            var self = this;
+
             this.threeDModal = {
                 content: modalContent,
                 open: function () {
-                    modal.style.display = "block";
+                    modal.classList.add("open");
                 },
                 close: function () {
-                    modal.style.display = "none";
+                    modal.classList.remove("open");
                 }
             };
+
+            modal.querySelector('.dna-payment-modal-close').onclick = function () {
+                self.threeDModal.close();
+                fullScreenLoader.stopLoader();
+                self.isPlaceOrderActionAllowed(true);
+
+                if (self.hostedFieldsInstance) {
+                    self.hostedFieldsInstance.clear();
+                }
+
+                restoreQuoteAction(self.orderId);
+                self.paymentResponse = null;
+                self.orderId = null;
+
+                self.showError($t('Payment was cancelled.'));
+            };
+        },
+        showError: function (errorMessage) {
+            globalMessageList.addErrorMessage({
+                message: errorMessage
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         validate: async function () {
             if (this.hostedFieldsInstance) {
