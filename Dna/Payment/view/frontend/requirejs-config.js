@@ -9,5 +9,21 @@ const config = {
     map: {
         '*': {
         }
+    },
+    config: {
+        mixins: {
+            'Magento_Checkout/js/action/get-totals': {
+                'Dna_Payment/js/model/get-totals-mixin': true
+            },
+            'Magento_Checkout/js/action/set-payment-information': {
+                'Dna_Payment/js/model/set-payment-information-mixin': true
+            },
+            'Magento_Checkout/js/action/set-payment-information-extended': {
+                'Dna_Payment/js/model/set-payment-information-mixin': true
+            },
+            'Magento_Checkout/js/model/error-processor': {
+                'Dna_Payment/js/model/error-processor-mixin': true
+            }
+        }
     }
 };
