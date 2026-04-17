@@ -7,13 +7,28 @@ define(
         'mage/storage',
         'mage/translate',
         'Magento_Checkout/js/action/place-order',
+        'Magento_Checkout/js/model/quote',
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Ui/js/model/messageList',
         'Magento_Vault/js/view/payment/vault-enabler',
         'Magento_Payment/js/view/payment/cc-form',
-        'Dna_Payment/js/action/restore-quote-action'
+        'Dna_Payment/js/action/restore-quote-action',
+        'Dna_Payment/js/model/sync-cart-section'
     ],
-    function ($, hostedFields, storage, $t, placeOrderAction, fullScreenLoader, globalMessageList, VaultEnabler, Component, restoreQuoteAction) {
+    function (
+        $,
+        hostedFields,
+        storage,
+        $t,
+        placeOrderAction,
+        quote,
+        fullScreenLoader,
+        globalMessageList,
+        VaultEnabler,
+        Component,
+        restoreQuoteAction,
+        syncCartSection
+    ) {
         'use strict';
 
         return Component.extend({
@@ -26,7 +41,15 @@ define(
                 threeDModal: null,
             },
             initialize: function () {
+                var self = this;
+
                 this._super();
+                window.dnaPaymentCheckoutLocked = false;
+                this.syncCartSection();
+
+                quote.totals.subscribe(function (newTotals) {
+                    self.syncCartSection(newTotals);
+                });
 
                 fullScreenLoader.startLoader();
 
@@ -79,6 +102,9 @@ define(
             getVaultCode: function () {
                 return window.checkoutConfig.payment[this.getCode()].ccVaultCode;
             },
+            syncCartSection: function (optionalTotals) {
+                syncCartSection(optionalTotals);
+            },
             showError: function (errorMessage) {
                 globalMessageList.addErrorMessage({
                     message: errorMessage
@@ -93,6 +119,7 @@ define(
                 }
 
                 if (await this.validate() && this.isPlaceOrderActionAllowed() === true) {
+                    window.dnaPaymentCheckoutLocked = true;
                     fullScreenLoader.startLoader();
                     this.isPlaceOrderActionAllowed(false);
                     this.getPlaceOrderDeferredObject().done(
@@ -120,6 +147,7 @@ define(
                                             console.error('Failed to submit hosted fields data:', error);
 
                                             fullScreenLoader.stopLoader();
+                                            window.dnaPaymentCheckoutLocked = false;
                                             self.isPlaceOrderActionAllowed(true);
 
                                             if (error.code === 'INVALID_CARD_DATA') {
@@ -138,6 +166,7 @@ define(
                                     })
                                     .catch(function (error) {
                                         fullScreenLoader.stopLoader();
+                                        window.dnaPaymentCheckoutLocked = false;
                                         self.isPlaceOrderActionAllowed(true);
 
                                         // Restore quote so retry can create a new order
@@ -154,6 +183,7 @@ define(
                             console.log('Failed to placed order.');
 
                             fullScreenLoader.stopLoader();
+                            window.dnaPaymentCheckoutLocked = false;
                             self.isPlaceOrderActionAllowed(true);
                             self.showError($t('Failed to place order.'));
                         }
@@ -164,6 +194,7 @@ define(
                     console.log('Hosted fields validation failed.');
 
                     fullScreenLoader.stopLoader();
+                    window.dnaPaymentCheckoutLocked = false;
                     self.isPlaceOrderActionAllowed(true);
                     self.showError($t('Please check your card details.'));
                 }
@@ -211,6 +242,7 @@ define(
                 modal.querySelector('.dna-payment-modal-close').onclick = function () {
                     self.threeDModal.close();
                     fullScreenLoader.stopLoader();
+                    window.dnaPaymentCheckoutLocked = false;
                     self.isPlaceOrderActionAllowed(true);
 
                     if (self.hostedFieldsInstance) {
