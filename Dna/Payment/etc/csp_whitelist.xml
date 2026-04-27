@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 <csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp:etc/csp_whitelist.xsd">
     <policies>
+        <policy id="style-src">
+            <values>
+                <value id="applepay.cdn-apple.com" type="host">applepay.cdn-apple.com</value>
+            </values>
+        </policy>
         <policy id="script-src">
             <values>
                 <value id="pay.dnapayments.com" type="host">pay.dnapayments.com</value>
@@ -9,6 +14,12 @@
                 <value id="test-cdn.dnapayments.com" type="host">test-cdn.dnapayments.com</value>
                 <value id="sentry.dnapayments.com" type="host">sentry.dnapayments.com</value>
                 <value id="test-sentry.dnapayments.com" type="host">test-sentry.dnapayments.com</value>
+                <value id="js.apple.com" type="host">js.apple.com</value>
+            </values>
+        </policy>
+        <policy id="font-src">
+            <values>
+                <value id="applepay.cdn-apple.com" type="host">applepay.cdn-apple.com</value>
             </values>
         </policy>
         <policy id="img-src">
@@ -17,12 +28,31 @@
                 <value id="pay.dnapayments.com" type="host">pay.dnapayments.com</value>
             </values>
         </policy>
+        <policy id="frame-src">
+            <values>
+                <value id="pay.dnapayments.com" type="host">pay.dnapayments.com</value>
+                <value id="test-pay.dnapayments.com" type="host">test-pay.dnapayments.com</value>
+                <value id="cdn.dnapayments.com" type="host">cdn.dnapayments.com</value>
+                <value id="test-cdn.dnapayments.com" type="host">test-cdn.dnapayments.com</value>
+                <value id="api.dnapayments.com" type="host">api.dnapayments.com</value>
+                <value id="test-api.dnapayments.com" type="host">test-api.dnapayments.com</value>
+                <value id="acs-challenge.apata.io" type="host">acs-challenge.apata.io</value>
+            </values>
+        </policy>
         <policy id="connect-src">
             <values>
                 <value id="test-api.dnapayments.com" type="host">https://test-api.dnapayments.com</value>
                 <value id="api.dnapayments.com" type="host">https://api.dnapayments.com</value>
                 <value id="sentry.dnapayments.com" type="host">sentry.dnapayments.com</value>
                 <value id="test-sentry.dnapayments.com" type="host">test-sentry.dnapayments.com</value>
+                <value id="pay.dnapayments.com" type="host">https://pay.dnapayments.com</value>
+                <value id="test-pay.dnapayments.com" type="host">https://test-pay.dnapayments.com</value>
+                <value id="applepay.cdn-apple.com" type="host">https://applepay.cdn-apple.com</value>
+            </values>
+        </policy>
+        <policy id="form-action">
+            <values>
+                <value id="acs-challenge.apata.io" type="host">acs-challenge.apata.io</value>
             </values>
         </policy>
     </policies>
