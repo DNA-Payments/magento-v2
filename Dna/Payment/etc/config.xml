@@ -168,23 +168,5 @@
                 <group>dna_payment_group</group>
             </dna_payment_clicktopay>
         </payment>
-        <csp>
-            <policies>
-                <storefront_checkout_index_index>
-                    <dna_frames>
-                        <policy_id>frame-src</policy_id>
-                        <schemes>
-                            <https>https</https>
-                        </schemes>
-                    </dna_frames>
-                    <dna_forms>
-                        <policy_id>form-action</policy_id>
-                        <schemes>
-                            <https>https</https>
-                        </schemes>
-                    </dna_forms>
-                </storefront_checkout_index_index>
-            </policies>
-        </csp>
     </default>
 </config>
