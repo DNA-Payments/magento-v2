@@ -10,17 +10,19 @@ define(
         'Magento_Checkout/js/model/payment/additional-validators',
         'Dna_Payment/js/action/restore-quote-action',
         'mage/translate',
+        'mage/url',
         'Dna_Payment/js/api',
         'dna-click-to-pay',
         'dnapayments-api'
     ],
-    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, api, dnaClickToPay, dnaApi) {
+    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaClickToPay, dnaApi) {
         'use strict';
 
         return Component.extend({
                 createPaymentComponent: function (paymentData, auth, isTestMode) {
                     let self = this;
                     const accessToken = auth.access_token;
+                    self.isPaymentSuccessful = false;
                     paymentData.auth = auth;
 
                     window.DNAPayments.ClickToPayComponent.init(
@@ -64,21 +66,43 @@ define(
                                     });
                                 },
                                 onPaymentSuccess: (result) => {
+                                    self.isPaymentSuccessful = true;
+                                    self.orderId = null;
                                     fullScreenLoader.stopLoader();
                                     redirectOnSuccessAction.execute();
                                 },
                                 onCancel: () => {
+                                    if (self.isPaymentSuccessful) {
+                                        fullScreenLoader.stopLoader();
+                                        return;
+                                    }
                                     fullScreenLoader.startLoader();
+
+                                    if (!self.orderId) {
+                                        window.location.href = urlBuilder.build('checkout/cart');
+                                        return;
+                                    }
+
                                     restoreQuoteAction(self.orderId, function () {
                                         self.orderId = null;
                                         window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
                                     });
                                 },
                                 onError: (err) => {
+                                    if (self.isPaymentSuccessful) {
+                                        fullScreenLoader.stopLoader();
+                                        return;
+                                    }
+                                    err = err || {};
                                     console.log('ClickToPayComponent error', err);
 
                                     let message = err.message ||
                                         $t('Your card has not been authorised, please check the details and retry or contact your bank.');
+
+                                    if (!self.orderId) {
+                                        self.markPaymentMethodUnavailable();
+                                        return;
+                                    }
 
                                     self.showError(message);
                                     fullScreenLoader.startLoader();

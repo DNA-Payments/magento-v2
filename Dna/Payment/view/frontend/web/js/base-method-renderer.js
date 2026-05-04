@@ -18,8 +18,9 @@ define(
             defaults: {
                 template: 'Dna_Payment/payment/form-alt',
             },
-            isLoading: ko.observable(false),
             initialize: function () {
+                this.isLoading = ko.observable(false);
+                this.isPaymentMethodAvailable = ko.observable(true);
                 this._super();
 
                 let self = this;
@@ -38,19 +39,26 @@ define(
             },
             createPaymentComponent: function (paymentData, auth, isTestMode) {
             },
-            renderPaymentComponent: function(self, quoteId) {
+            renderPaymentComponent: function (self, quoteId) {
+                self.isPaymentMethodAvailable(true);
                 $('#' + self.getCode() + '_container').html('');
                 self.isLoading(true);
 
                 self.fetchQuotePaymentData(quoteId)
                     .then(async function (response) {
-                        const {paymentData, auth, isTestMode} = response;
+                        const { paymentData, auth, isTestMode } = response;
                         self.isLoading(false);
-                        self.createPaymentComponent(paymentData, auth, isTestMode);
+                        try {
+                            self.createPaymentComponent(paymentData, auth, isTestMode);
+                        } catch (error) {
+                            console.error('Failed to render ' + self.getCode() + ' payment component:', error);
+                            self.markPaymentMethodUnavailable();
+                        }
                     })
                     .catch(function (error) {
-                        console.error('Failed to fetch quote data:', error);
+                        console.error('Failed to fetch ' + self.getCode() + ' quote data:', error);
                         self.isLoading(false);
+                        self.markPaymentMethodUnavailable();
                         fullScreenLoader.stopLoader();
                     });
             },
@@ -62,6 +70,25 @@ define(
                 const warningText = $('#' + this.getCode() + '_warning_text');
                 warningText.text(errorMessage);
                 warningContainer.show();
+            },
+            markPaymentMethodUnavailable: function () {
+                this.isLoading(false);
+                fullScreenLoader.stopLoader();
+
+                this.isPaymentMethodAvailable(false);
+
+                if (this.isChecked() === this.getCode()) {
+                    this.selectFallbackPaymentMethod();
+                }
+            },
+            selectFallbackPaymentMethod: function () {
+                window.setTimeout(function () {
+                    const nextMethod = $('.payment-method:visible input[name="payment[method]"]:enabled').not(':checked').first();
+
+                    if (nextMethod.length) {
+                        nextMethod.trigger('click');
+                    }
+                }, 0);
             },
             getLogo: function () {
                 return window.checkoutConfig.payment[this.getCode()].logo;

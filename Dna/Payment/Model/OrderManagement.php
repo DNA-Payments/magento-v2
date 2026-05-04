@@ -1090,6 +1090,21 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
             // Cancel ALL pending_payment DNA orders for this quote, not just the last one
             $quoteId = $order->getQuoteId();
+            $currentQuote = $this->checkoutSession->getQuote();
+            if ($currentQuote
+                && $currentQuote->getId()
+                && $currentQuote->getIsActive()
+                && $currentQuote->getItemsCount() > 0
+                && $currentQuote->getId() != $quoteId
+            ) {
+                $this->dnaLogger->info('OrderManagement::restoreQuote skipped: newer active quote exists', [
+                    'order_id' => $order->getIncrementId(),
+                    'restore_quote_id' => $quoteId,
+                    'current_quote_id' => $currentQuote->getId(),
+                ]);
+                return false;
+            }
+
             $pendingOrders = $this->orderCollectionFactory->create()
                 ->addFieldToFilter('quote_id', $quoteId)
                 ->addFieldToFilter('state', Order::STATE_PENDING_PAYMENT);

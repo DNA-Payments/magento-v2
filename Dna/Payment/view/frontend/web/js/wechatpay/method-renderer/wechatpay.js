@@ -10,16 +10,18 @@ define(
         'Magento_Checkout/js/model/payment/additional-validators',
         'Dna_Payment/js/action/restore-quote-action',
         'mage/translate',
+        'mage/url',
         'Dna_Payment/js/api',
         'dna-alipay-wechat-pay'
     ],
-    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, api, dnaWeChatPay) {
+    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaWeChatPay) {
         'use strict';
 
         return Component.extend({
                 createPaymentComponent: function (paymentData, auth, isTestMode) {
                     let self = this;
                     const accessToken = auth.access_token;
+                    self.isPaymentSuccessful = false;
                     window.DNAPayments.WeChatPayComponent.init(
                         {
                             containerElement: $('#' + self.getCode() + '_container')[0],
@@ -61,21 +63,43 @@ define(
                                     });
                                 },
                                 onPaymentSuccess: (result) => {
+                                    self.isPaymentSuccessful = true;
+                                    self.orderId = null;
                                     fullScreenLoader.stopLoader();
                                     redirectOnSuccessAction.execute();
                                 },
                                 onCancel: () => {
+                                    if (self.isPaymentSuccessful) {
+                                        fullScreenLoader.stopLoader();
+                                        return;
+                                    }
                                     fullScreenLoader.startLoader();
+
+                                    if (!self.orderId) {
+                                        window.location.href = urlBuilder.build('checkout/cart');
+                                        return;
+                                    }
+
                                     restoreQuoteAction(self.orderId, function () {
                                         self.orderId = null;
                                         window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
                                     });
                                 },
                                 onError: (err) => {
+                                    if (self.isPaymentSuccessful) {
+                                        fullScreenLoader.stopLoader();
+                                        return;
+                                    }
+                                    err = err || {};
                                     console.log('WeChatPayComponent error', err);
 
                                     let message = err.message ||
                                         $t('Your card has not been authorised, please check the details and retry or contact your bank.');
+
+                                    if (!self.orderId) {
+                                        self.markPaymentMethodUnavailable();
+                                        return;
+                                    }
 
                                     self.showError(message);
                                     fullScreenLoader.startLoader();

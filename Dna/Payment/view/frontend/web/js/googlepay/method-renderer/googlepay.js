@@ -10,16 +10,18 @@ define(
         'Magento_Checkout/js/model/payment/additional-validators',
         'Dna_Payment/js/action/restore-quote-action',
         'mage/translate',
+        'mage/url',
         'Dna_Payment/js/api',
         'dna-google-pay'
     ],
-    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, api, dnaGooglePay) {
+    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaGooglePay) {
         'use strict';
 
         return Component.extend({
                 createPaymentComponent: function (paymentData, auth, isTestMode) {
                     let self = this;
                     const accessToken = auth.access_token;
+                    self.isPaymentSuccessful = false;
 
                     window.DNAPayments.GooglePayComponent.init(
                         {
@@ -61,17 +63,34 @@ define(
                                     });
                                 },
                                 onPaymentSuccess: (result) => {
+                                    self.isPaymentSuccessful = true;
+                                    self.orderId = null;
                                     fullScreenLoader.stopLoader();
                                     redirectOnSuccessAction.execute();
                                 },
                                 onCancel: () => {
+                                    if (self.isPaymentSuccessful) {
+                                        fullScreenLoader.stopLoader();
+                                        return;
+                                    }
                                     fullScreenLoader.startLoader();
+
+                                    if (!self.orderId) {
+                                        window.location.href = urlBuilder.build('checkout/cart');
+                                        return;
+                                    }
+
                                     restoreQuoteAction(self.orderId, function () {
                                         self.orderId = null;
                                         window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
                                     });
                                 },
                                 onError: (err) => {
+                                    if (self.isPaymentSuccessful) {
+                                        fullScreenLoader.stopLoader();
+                                        return;
+                                    }
+                                    err = err || {};
                                     console.log('GooglePayComponent error', err);
 
                                     let message = err.message ||
@@ -79,6 +98,11 @@ define(
 
                                     if (err.code === 1002 || err.code === 1003) {
                                         message = $t('Google Pay payments are not supported in your current browser.');
+                                    }
+
+                                    if (!self.orderId) {
+                                        self.markPaymentMethodUnavailable();
+                                        return;
                                     }
 
                                     self.showError(message);

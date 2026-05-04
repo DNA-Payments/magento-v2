@@ -4,7 +4,7 @@
  * See COPYING.txt for license details.
  */
 -->
-<div data-bind="css: {'_active': (getCode() == isChecked())}, attr: {'id': getCode() + '_payment_method'}"
+<div data-bind="css: {'_active': (getCode() == isChecked())}, attr: {'id': getCode() + '_payment_method'}, visible: isPaymentMethodAvailable"
      class="payment-method">
     <div class="payment-method-title field choice">
         <input type="radio"
