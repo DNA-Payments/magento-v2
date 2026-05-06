@@ -72,23 +72,15 @@ define(
                 warningContainer.show();
             },
             markPaymentMethodUnavailable: function () {
+                const wasSelected = this.isChecked() === this.getCode();
+
                 this.isLoading(false);
                 fullScreenLoader.stopLoader();
-
                 this.isPaymentMethodAvailable(false);
 
-                if (this.isChecked() === this.getCode()) {
-                    this.selectFallbackPaymentMethod();
+                if (wasSelected) {
+                    this.isChecked(null);
                 }
-            },
-            selectFallbackPaymentMethod: function () {
-                window.setTimeout(function () {
-                    const nextMethod = $('.payment-method:visible input[name="payment[method]"]:enabled').not(':checked').first();
-
-                    if (nextMethod.length) {
-                        nextMethod.trigger('click');
-                    }
-                }, 0);
             },
             getLogo: function () {
                 return window.checkoutConfig.payment[this.getCode()].logo;
