@@ -226,7 +226,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     public function getPaymentData($order)
     {
         $billingAddress = $order->getBillingAddress();
-        $paymentAction = $this->config->getPaymentAction($this->storeId);
+        $paymentAction = ModelConfig::normalizePaymentAction($this->config->getPaymentAction($this->storeId));
 
         $paymentData = [
             'invoiceId' => $order->getIncrementId(),
@@ -254,9 +254,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'orderLines' => $this->getOrderLines($order),
         ];
 
-        if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
-            $paymentData['transactionType'] = ModelConfig::getTransactionType($paymentAction);
-        }
+        $paymentData['transactionType'] = ModelConfig::getTransactionType($paymentAction);
 
         return $paymentData;
     }
@@ -468,10 +466,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ];
         }
 
-        $paymentAction = $this->config->getPaymentAction($this->storeId);
-        if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
-            $response['paymentData']['transactionType'] = ModelConfig::getTransactionType($paymentAction);
-        }
+        $paymentAction = ModelConfig::normalizePaymentAction($this->config->getPaymentAction($this->storeId));
+        $response['paymentData']['transactionType'] = ModelConfig::getTransactionType($paymentAction);
 
         return $response;
     }
