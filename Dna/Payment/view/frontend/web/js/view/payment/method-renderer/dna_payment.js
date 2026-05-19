@@ -16,7 +16,7 @@ define(
         'Magento_Checkout/js/model/payment/additional-validators',
         'Magento_Checkout/js/model/full-screen-loader',
         'Dna_Payment/js/action/restore-quote-action',
-        'Dna_Payment/js/model/totals-request-gate',
+        'Magento_Checkout/js/model/totals',
         'Dna_Payment/js/model/sync-cart-section'
     ],
     function (
@@ -30,14 +30,14 @@ define(
         additionalValidators,
         fullScreenLoader,
         restoreQuoteAction,
-        totalsRequestGate,
+        totals,
         syncCartSection
     ) {
         'use strict';
 
         return Component.extend({
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
-            isPlaceOrderQueued: false,
+            totals: totals,
             isPlaceOrderInProgress: false,
             redirectAfterPlaceOrder: false,
             defaults: {
@@ -54,20 +54,7 @@ define(
                     event.preventDefault();
                 }
 
-                if (totalsRequestGate.isBusy()) {
-                    if (this.isPlaceOrderQueued) {
-                        return false;
-                    }
-
-                    this.isPlaceOrderQueued = true;
-                    this.isPlaceOrderActionAllowed(false);
-
-                    totalsRequestGate.runWhenIdle(function () {
-                        self.isPlaceOrderQueued = false;
-                        self.isPlaceOrderActionAllowed(true);
-                        self.placeOrder(data, event);
-                    });
-
+                if (totals.isLoading()) {
                     return false;
                 }
 

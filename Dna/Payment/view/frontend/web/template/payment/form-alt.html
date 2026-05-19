@@ -43,7 +43,11 @@
             <div class="dna-payment-method-container">
                 <div class="dna-payment-method-loader" data-bind="blockLoader: isLoading">
                 </div>
-                <div data-bind="attr: {id: getCode() + '_container'}"></div>
+                <div class="dna-payment-method-sdk-container"
+                     data-bind="
+                        attr: {id: getCode() + '_container'},
+                        css: {'_totals-loading': totals.isLoading()}
+                     "></div>
             </div>
         </div>
     </div>

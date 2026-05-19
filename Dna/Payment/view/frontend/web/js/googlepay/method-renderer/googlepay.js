@@ -5,6 +5,7 @@ define(
     [
         'jquery',
         'Dna_Payment/js/base-method-renderer',
+        'Magento_Checkout/js/model/totals',
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Checkout/js/action/redirect-on-success',
         'Magento_Checkout/js/model/payment/additional-validators',
@@ -14,7 +15,7 @@ define(
         'Dna_Payment/js/api',
         'dna-google-pay'
     ],
-    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaGooglePay) {
+    function ($, Component, totals, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaGooglePay) {
         'use strict';
 
         return Component.extend({
@@ -29,6 +30,10 @@ define(
                             paymentData: paymentData,
                             events: {
                                 onClick: () => {
+                                    if (totals.isLoading()) {
+                                        return false;
+                                    }
+
                                     fullScreenLoader.startLoader();
                                     $('#' + self.getCode() + '_warning_container').hide();
                                 },
@@ -101,7 +106,7 @@ define(
                                     }
 
                                     if (!self.orderId) {
-                                        self.markPaymentMethodUnavailable();
+                                        self.showError(message);
                                         return;
                                     }
 

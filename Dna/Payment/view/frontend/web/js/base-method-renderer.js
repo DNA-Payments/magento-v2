@@ -7,14 +7,16 @@ define(
         'ko',
         'Magento_Checkout/js/view/payment/default',
         'Magento_Checkout/js/model/quote',
+        'Magento_Checkout/js/model/totals',
         'Magento_Checkout/js/model/full-screen-loader',
         'mage/translate',
         'Dna_Payment/js/api'
     ],
-    function ($, ko, Component, quote, fullScreenLoader, $t, api) {
+    function ($, ko, Component, quote, totals, fullScreenLoader, $t, api) {
         'use strict';
 
         return Component.extend({
+            totals: totals,
             defaults: {
                 template: 'Dna_Payment/payment/form-alt',
             },
@@ -25,6 +27,10 @@ define(
 
                 let self = this;
                 let quoteId = quote.getQuoteId();
+
+                totals.isLoading.subscribe(function (isLoading) {
+                    $('#' + self.getCode() + '_container').toggleClass('_totals-loading', isLoading);
+                });
 
                 quote.totals.subscribe(function (newTotals) {
                     if (newTotals && newTotals.grand_total && (self.grand_total || !self.isActive()) && self.grand_total !== newTotals.grand_total) {
@@ -41,7 +47,7 @@ define(
             },
             renderPaymentComponent: function (self, quoteId) {
                 self.isPaymentMethodAvailable(true);
-                $('#' + self.getCode() + '_container').html('');
+                $('#' + self.getCode() + '_container').empty();
                 self.isLoading(true);
 
                 self.fetchQuotePaymentData(quoteId)
@@ -70,6 +76,7 @@ define(
                 const warningText = $('#' + this.getCode() + '_warning_text');
                 warningText.text(errorMessage);
                 warningContainer.show();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             },
             markPaymentMethodUnavailable: function () {
                 const wasSelected = this.isChecked() === this.getCode();

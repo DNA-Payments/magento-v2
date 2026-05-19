@@ -5,6 +5,7 @@ define(
     [
         'jquery',
         'Dna_Payment/js/base-method-renderer',
+        'Magento_Checkout/js/model/totals',
         'Magento_Checkout/js/model/full-screen-loader',
         'Magento_Checkout/js/action/redirect-on-success',
         'Magento_Checkout/js/model/payment/additional-validators',
@@ -14,7 +15,7 @@ define(
         'Dna_Payment/js/api',
         'dna-alipay-wechat-pay'
     ],
-    function ($, Component, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaAlipay) {
+    function ($, Component, totals, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaAlipay) {
         'use strict';
 
         return Component.extend({
@@ -29,6 +30,10 @@ define(
                             paymentData: paymentData,
                             events: {
                                 onClick: () => {
+                                    if (totals.isLoading()) {
+                                        return false;
+                                    }
+
                                     fullScreenLoader.startLoader();
                                     $('#' + self.getCode() + '_warning_container').hide();
 
@@ -99,7 +104,7 @@ define(
                                         $t('Your card has not been authorised, please check the details and retry or contact your bank.');
 
                                     if (!self.orderId) {
-                                        self.markPaymentMethodUnavailable();
+                                        self.showError(message);
                                         return;
                                     }
 
