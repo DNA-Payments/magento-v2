@@ -9,7 +9,6 @@
                 <value id="test-cdn.dnapayments.com" type="host">test-cdn.dnapayments.com</value>
                 <value id="sentry.dnapayments.com" type="host">sentry.dnapayments.com</value>
                 <value id="test-sentry.dnapayments.com" type="host">test-sentry.dnapayments.com</value>
-                <value id="js.apple.com" type="host">js.apple.com</value>
                 <value id="applepay.cdn-apple.com" type="host">applepay.cdn-apple.com</value>
             </values>
         </policy>
