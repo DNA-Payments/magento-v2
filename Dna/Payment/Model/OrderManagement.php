@@ -226,7 +226,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     public function getPaymentData($order)
     {
         $billingAddress = $order->getBillingAddress();
-        $paymentAction = $this->config->getPaymentAction($this->storeId);
+        $paymentAction = ModelConfig::normalizePaymentAction($this->config->getPaymentAction($this->storeId));
 
         $paymentData = [
             'invoiceId' => $order->getIncrementId(),
@@ -254,9 +254,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             'orderLines' => $this->getOrderLines($order),
         ];
 
-        if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
-            $paymentData['transactionType'] = ModelConfig::getTransactionType($paymentAction);
-        }
+        $paymentData['transactionType'] = ModelConfig::getTransactionType($paymentAction);
 
         return $paymentData;
     }
@@ -468,10 +466,8 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             ];
         }
 
-        $paymentAction = $this->config->getPaymentAction($this->storeId);
-        if ($paymentAction !== ModelConfig::PAYMENT_PAYMENT_ACTION_DEFAULT) {
-            $response['paymentData']['transactionType'] = ModelConfig::getTransactionType($paymentAction);
-        }
+        $paymentAction = ModelConfig::normalizePaymentAction($this->config->getPaymentAction($this->storeId));
+        $response['paymentData']['transactionType'] = ModelConfig::getTransactionType($paymentAction);
 
         return $response;
     }
@@ -1088,13 +1084,43 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
                 return false;
             }
 
-            if ($order->canCancel()) {
-                $order->cancel();
-                $this->orderRepository->save($order);
-                $this->dnaLogger->info('Canceled ghost pending_payment order during restoreQuote', ['order_id' => $order->getIncrementId()]);
+            // Cancel ALL pending_payment DNA orders for this quote, not just the last one
+            $quoteId = $order->getQuoteId();
+            $currentQuote = $this->checkoutSession->getQuote();
+            if ($currentQuote
+                && $currentQuote->getId()
+                && $currentQuote->getIsActive()
+                && $currentQuote->getItemsCount() > 0
+                && $currentQuote->getId() != $quoteId
+            ) {
+                $this->dnaLogger->info('OrderManagement::restoreQuote skipped: newer active quote exists', [
+                    'order_id' => $order->getIncrementId(),
+                    'restore_quote_id' => $quoteId,
+                    'current_quote_id' => $currentQuote->getId(),
+                ]);
+                return false;
             }
 
-            return $this->restoreQuoteById($order->getQuoteId(), $order->getIncrementId());
+            $pendingOrders = $this->orderCollectionFactory->create()
+                ->addFieldToFilter('quote_id', $quoteId)
+                ->addFieldToFilter('state', Order::STATE_PENDING_PAYMENT);
+
+            foreach ($pendingOrders as $pendingOrder) {
+                $pendingPaymentMethod = $pendingOrder->getPayment() ? $pendingOrder->getPayment()->getMethod() : "";
+                if (strpos($pendingPaymentMethod, "dna_payment") === false) {
+                    continue;
+                }
+
+                if ($pendingOrder->canCancel()) {
+                    $pendingOrder->cancel();
+                    $this->orderRepository->save($pendingOrder);
+                    $this->dnaLogger->info('Canceled pending_payment order during restoreQuote', [
+                        'order_id' => $pendingOrder->getIncrementId()
+                    ]);
+                }
+            }
+
+            return $this->restoreQuoteById($quoteId, $order->getIncrementId());
         } catch (\Exception $e) {
             $this->dnaLogger->logException('Failed to restore quote', $e);
         }
@@ -1112,10 +1138,14 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     {
         try {
             $quote = $this->cartRepository->get($quoteId);
-            if ($quote->getId()) {
+            if ($quote->getId() && !$quote->getIsActive()) {
                 $quote->setIsActive(1)->setReservedOrderId(null);
                 $this->cartRepository->save($quote);
                 $this->checkoutSession->replaceQuote($quote)->setLastRealOrderId($lastRealOrderId);
+                $this->dnaLogger->info('OrderManagement::restoreQuoteById restored quote', [
+                    'quote_id' => $quote->getId(),
+                    'last_real_order_id' => $lastRealOrderId,
+                ]);
                 return true;
             }
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {

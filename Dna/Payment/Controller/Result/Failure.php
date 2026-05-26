@@ -2,6 +2,7 @@
 
 namespace Dna\Payment\Controller\Result;
 
+use Dna\Payment\Helper\DnaLogger;
 use Magento\Catalog\Controller\Product\View\ViewInterface;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
@@ -28,6 +29,7 @@ class Failure extends Action implements ViewInterface
     protected $orderRepository;
     protected $config;
     protected $messageManager;
+    protected $dnaLogger;
 
     /**
      * Failure constructor.
@@ -39,7 +41,8 @@ class Failure extends Action implements ViewInterface
         Context $context,
         ManagerInterface $messageManager,
         ScopeConfigInterface $scopeConfig,
-        OrderRepositoryInterface $orderRepository
+        OrderRepositoryInterface $orderRepository,
+        DnaLogger $dnaLogger
     )
     {
         $this->_context = $context;
@@ -47,6 +50,7 @@ class Failure extends Action implements ViewInterface
         $this->messageManager = $messageManager;
         $this->_scopeConfig = $scopeConfig;
         $this->orderRepository = $orderRepository;
+        $this->dnaLogger = $dnaLogger;
         parent::__construct($context);
 
     }
@@ -59,7 +63,6 @@ class Failure extends Action implements ViewInterface
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $_checkoutSession = $objectManager->create('\Magento\Checkout\Model\Session');
         $_quoteFactory = $objectManager->create('\Magento\Quote\Model\QuoteFactory');
-        $storeId = $_checkoutSession->getStoreId();
 
         $order = $_checkoutSession->getLastRealOrder();
         $status = $order->getStatus();
@@ -75,7 +78,14 @@ class Failure extends Action implements ViewInterface
 
         $quote = $_quoteFactory->create()->loadByIdWithoutStore($order->getQuoteId());
         if ($quote->getId()) {
-            $quote->setIsActive(1)->setReservedOrderId(null)->save();
+            if (!$quote->getIsActive()) {
+                $quote->setIsActive(1)->setReservedOrderId(null)->save();
+                $this->dnaLogger->info('Failure controller restored quote', [
+                    'order_id' => $order->getIncrementId(),
+                    'quote_id' => $quote->getId(),
+                ]);
+            }
+
             $_checkoutSession->replaceQuote($quote);
 
             if (empty($this->getRequest()->getParam('cancel'))) {

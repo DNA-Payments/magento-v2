@@ -24,8 +24,16 @@ class Config implements ConfigProviderInterface
         return [
             self::PAYMENT_PAYMENT_ACTION_SALE => __('Sale'),
             self::PAYMENT_PAYMENT_ACTION_AUTH => __('Authorization'),
-            self::PAYMENT_PAYMENT_ACTION_DEFAULT => __('Default'),
         ];
+    }
+
+    public static function normalizePaymentAction($paymentAction)
+    {
+        if (!$paymentAction || $paymentAction === self::PAYMENT_PAYMENT_ACTION_DEFAULT) {
+            return self::PAYMENT_PAYMENT_ACTION_SALE;
+        }
+
+        return $paymentAction;
     }
 
     public static function getPaymentIntegrationTypes()

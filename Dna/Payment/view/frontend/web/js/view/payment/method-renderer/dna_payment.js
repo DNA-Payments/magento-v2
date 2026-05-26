@@ -13,8 +13,11 @@ define(
         'Magento_Checkout/js/view/payment/default',
         'Magento_Ui/js/model/messageList',
         'Magento_Checkout/js/model/quote',
+        'Magento_Checkout/js/model/payment/additional-validators',
         'Magento_Checkout/js/model/full-screen-loader',
-        'Dna_Payment/js/action/restore-quote-action'
+        'Dna_Payment/js/action/restore-quote-action',
+        'Magento_Checkout/js/model/totals',
+        'Dna_Payment/js/model/sync-cart-section'
     ],
     function (
         ko,
@@ -24,65 +27,174 @@ define(
         Component,
         globalMessageList,
         quote,
+        additionalValidators,
         fullScreenLoader,
-        restoreQuoteAction
+        restoreQuoteAction,
+        totals,
+        syncCartSection
     ) {
         'use strict';
+
         return Component.extend({
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
+            totals: totals,
+            isPlaceOrderInProgress: false,
             redirectAfterPlaceOrder: false,
             defaults: {
                 template: 'Dna_Payment/payment/form'
+            },
+            initialize: function () {
+                this._super();
+                this.syncCartSection();
+                return this;
+            },
+            placeOrder: function (data, event) {
+                var self = this;
+                if (event && typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+
+                if (totals.isLoading()) {
+                    return false;
+                }
+
+                if (this.isPlaceOrderInProgress) {
+                    return false;
+                }
+
+                this.isPlaceOrderInProgress = true;
+                this.isPlaceOrderActionAllowed(false);
+
+                var isValid = this.validate();
+                var additionalValid = additionalValidators.validate();
+
+                if (!isValid || !additionalValid) {
+                    this.isPlaceOrderInProgress = false;
+                    this.isPlaceOrderActionAllowed(true);
+                    return false;
+                }
+
+                this.getPlaceOrderDeferredObject()
+                    .done(function () {
+                        self.afterPlaceOrder();
+                    })
+                    .fail(function () {
+                        self.isPlaceOrderInProgress = false;
+                        self.isPlaceOrderActionAllowed(true);
+                    });
+
+                return true;
+            },
+            syncCartSection: function () {
+                syncCartSection();
             },
             afterPlaceOrder: function () {
                 this.getOrder()
             },
             getOrder(){
                 const self = this;
+                const requestUrl = 'rest/V1/dna-payment/start-and-get';
+                let requestCompleted = false;
                 fullScreenLoader.startLoader();
-                storage.post('rest/V1/dna-payment/start-and-get')
+
+                var request;
+                try {
+                    request = storage.post(requestUrl);
+                } catch (e) {
+                    self.isPlaceOrderInProgress = false;
+                    self.isPlaceOrderActionAllowed(true);
+                    fullScreenLoader.stopLoader(true);
+                    self.showError('Error: Failed to start payment session request.');
+                    return;
+                }
+
+                setTimeout(function () {
+                    if (requestCompleted) {
+                        return;
+                    }
+
+                    self.isPlaceOrderInProgress = false;
+                    self.isPlaceOrderActionAllowed(true);
+                    self.syncCartSection();
+                    fullScreenLoader.stopLoader(true);
+                    self.showError('Error: Timeout while starting payment session. Please try again.');
+                }, 15000);
+
+                request
                     .done(function (res) {
-                        const {paymentData, auth, isTestMode, integrationType, savedCards} = (function () {
-                            if (Array.isArray(res)) {
-                                const [p, a, t, i, s] = res
-                                return {paymentData: p, auth: a, isTestMode: t, integrationType: i, savedCards: s}
-                            }
-                            return res || {}
-                        })()
-
-                        paymentData.auth = auth;
-
-                        const isCustomerAuthenticated = Boolean(paymentData.customerDetails.accountDetails.accountId)
-                        const allowSavingCards = isCustomerAuthenticated && self.isVaultEnabled();
-
-                        window.DNAPayments.configure({
-                            isTestMode,
-                            allowSavingCards: allowSavingCards,
-                            cards: allowSavingCards ? savedCards : [],
-                            events: {
-                                cancelled: () => {
-                                    fullScreenLoader.startLoader();
-                                    restoreQuoteAction(function () {
-                                        window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1'
-                                    });
-                                },
-                                declined: () => {
-                                    fullScreenLoader.startLoader();
-                                    restoreQuoteAction(function () {
-                                        window.location.href = paymentData.paymentSettings.failureReturnUrl
-                                    });
+                        requestCompleted = true;
+                        try {
+                            const {paymentData, auth, isTestMode, integrationType, savedCards} = (function () {
+                                if (Array.isArray(res)) {
+                                    const [p, a, t, i, s] = res
+                                    return {paymentData: p, auth: a, isTestMode: t, integrationType: i, savedCards: s}
                                 }
-                            }
-                        });
+                                return res || {}
+                            })()
 
-                        if (integrationType === '1') {
-                            window.DNAPayments.openPaymentIframeWidget(paymentData);
-                        } else {
-                            window.DNAPayments.openPaymentPage(paymentData);
+                            if (!paymentData || !auth) {
+                                throw new Error('Invalid start-and-get response');
+                            }
+
+                            paymentData.auth = auth;
+
+                            const isCustomerAuthenticated = Boolean(paymentData.customerDetails && paymentData.customerDetails.accountDetails && paymentData.customerDetails.accountDetails.accountId)
+                            const allowSavingCards = isCustomerAuthenticated && self.isVaultEnabled();
+
+                            var dnaApi = window.DNAPayments || window.dnaPayments;
+
+                            var commonConfig = {
+                                isTestMode: isTestMode,
+                                allowSavingCards: allowSavingCards,
+                                cards: allowSavingCards ? savedCards : [],
+                                events: {
+                                    cancelled: () => {
+                                        fullScreenLoader.startLoader();
+                                        restoreQuoteAction(function () {
+                                            window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
+                                        });
+                                    },
+                                    declined: () => {
+                                        fullScreenLoader.startLoader();
+                                        restoreQuoteAction(function () {
+                                            window.location.href = paymentData.paymentSettings.failureReturnUrl;
+                                        });
+                                    }
+                                }
+                            };
+
+                            if (dnaApi && typeof dnaApi.configure === 'function') {
+                                dnaApi.configure(commonConfig);
+                            } else if (dnaApi && typeof dnaApi.init === 'function') {
+                                // SDK compatibility fallback for versions without configure()
+                                dnaApi.init(commonConfig);
+                            }
+
+                            if (integrationType === '1') {
+                                if (!dnaApi || typeof dnaApi.openPaymentIframeWidget !== 'function') {
+                                    throw new Error('DNAPayments.openPaymentIframeWidget is not available');
+                                }
+                                dnaApi.openPaymentIframeWidget(paymentData);
+                            } else {
+                                if (!dnaApi || typeof dnaApi.openPaymentPage !== 'function') {
+                                    throw new Error('DNAPayments.openPaymentPage is not available');
+                                }
+                                dnaApi.openPaymentPage(paymentData);
+                            }
+                        } catch (e) {
+                            self.isPlaceOrderInProgress = false;
+                            self.isPlaceOrderActionAllowed(true);
+                            self.syncCartSection();
+                            self.showError('Error: Failed to initialize payment window.');
                         }
                     }).fail(function (response) {
+                    requestCompleted = true;
+                    self.isPlaceOrderInProgress = false;
+                    self.isPlaceOrderActionAllowed(true);
+                    self.syncCartSection();
                     self.showError('Error: Fail loading order request. Please check your credentials');
                 }).always(function () {
+                    self.syncCartSection();
                     fullScreenLoader.stopLoader(true);
                 })
             },
@@ -94,6 +206,9 @@ define(
                     'method': this.item.method,
                     'additional_data': null
                 };
+            },
+            getPlaceOrderDeferredObject: function () {
+                return this._super();
             },
             getAddressInfo: function () {
                 const address = quote.billingAddress() ? quote.billingAddress() : quote.shippingAddress();
@@ -167,6 +282,7 @@ define(
                 globalMessageList.addErrorMessage({
                     message: errorMessage
                 });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         });
     }

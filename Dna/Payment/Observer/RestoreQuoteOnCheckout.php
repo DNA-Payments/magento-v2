@@ -2,11 +2,14 @@
 
 namespace Dna\Payment\Observer;
 
+use Dna\Payment\Helper\DnaLogger;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Sales\Api\OrderRepositoryInterface;
 use Magento\Sales\Model\Order;
+use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderCollectionFactory;
 
 /**
  * Restores the customer's quote on checkout page load if there is a
@@ -28,13 +31,34 @@ class RestoreQuoteOnCheckout implements ObserverInterface
      */
     private $cartRepository;
 
+    /**
+     * @var OrderRepositoryInterface
+     */
+    private $orderRepository;
+
+    /**
+     * @var OrderCollectionFactory
+     */
+    private $orderCollectionFactory;
+
+    /**
+     * @var DnaLogger
+     */
+    private $dnaLogger;
+
     public function __construct(
         CheckoutSession $checkoutSession,
-        CartRepositoryInterface $cartRepository
-        )
+        CartRepositoryInterface $cartRepository,
+        OrderRepositoryInterface $orderRepository,
+        OrderCollectionFactory $orderCollectionFactory,
+        DnaLogger $dnaLogger
+    )
     {
         $this->checkoutSession = $checkoutSession;
         $this->cartRepository = $cartRepository;
+        $this->orderRepository = $orderRepository;
+        $this->orderCollectionFactory = $orderCollectionFactory;
+        $this->dnaLogger = $dnaLogger;
     }
 
     /**
@@ -75,16 +99,41 @@ class RestoreQuoteOnCheckout implements ObserverInterface
                 return;
             }
 
+            // Cancel ALL pending_payment DNA orders for this quote
+            $pendingOrders = $this->orderCollectionFactory->create()
+                ->addFieldToFilter('quote_id', $quoteId)
+                ->addFieldToFilter('state', Order::STATE_PENDING_PAYMENT);
+
+            foreach ($pendingOrders as $pendingOrder) {
+                $pendingPaymentMethod = $pendingOrder->getPayment() ? $pendingOrder->getPayment()->getMethod() : "";
+                if (strpos($pendingPaymentMethod, "dna_payment") === false) {
+                    continue;
+                }
+
+                if ($pendingOrder->canCancel()) {
+                    $pendingOrder->cancel();
+                    $this->orderRepository->save($pendingOrder);
+                    $this->dnaLogger->info('RestoreQuoteOnCheckout canceled pending_payment order', [
+                        'order_id' => $pendingOrder->getIncrementId(),
+                    ]);
+                }
+            }
+
+            // Restore the quote
             $quote = $this->cartRepository->get($quoteId);
             if ($quote->getId() && !$quote->getIsActive()) {
                 $quote->setIsActive(1)->setReservedOrderId(null);
                 $this->cartRepository->save($quote);
                 $this->checkoutSession->replaceQuote($quote);
                 $this->checkoutSession->setLastRealOrderId($order->getIncrementId());
+                $this->dnaLogger->info('RestoreQuoteOnCheckout restored quote', [
+                    'order_id' => $order->getIncrementId(),
+                    'quote_id' => $quote->getId(),
+                ]);
             }
         }
         catch (\Exception $e) {
-        // Silently fail — don't break checkout
+            $this->dnaLogger->logException('RestoreQuoteOnCheckout failed', $e);
         }
     }
 }
