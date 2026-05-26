@@ -149,7 +149,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->encryptor = $encryptor;
         $this->paymentTokenRepository = $paymentTokenRepository;
         $this->paymentTokenManagement = $paymentTokenManagement;
-            $this->dnaLogger = $dnaLogger;
+        $this->dnaLogger = $dnaLogger;
         $this->eventManager = $eventManager;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->sessionManager = $sessionManager;
