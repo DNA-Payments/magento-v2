@@ -86,7 +86,7 @@ define(
                 this.isPaymentMethodAvailable(false);
 
                 if (wasSelected) {
-                    this.isChecked(null);
+                    quote.paymentMethod(null);
                 }
             },
             getLogo: function () {
