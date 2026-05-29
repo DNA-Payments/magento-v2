@@ -93,7 +93,12 @@ class Failure extends Action implements ViewInterface
             }
 
             $resultRedirect = $this->resultRedirectFactory->create();
-            $resultRedirect->setPath('checkout/cart');
+            if ($this->getRequest()->getParam('cancel')) {
+                $resultRedirect->setUrl($this->_url->getUrl('checkout') . '#payment');
+            } else {
+                $resultRedirect->setPath('checkout/cart');
+            }
+
             return $resultRedirect;
         }
 
