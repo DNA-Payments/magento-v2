@@ -38,7 +38,6 @@ define(
         return Component.extend({
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
             totals: totals,
-            isPlaceOrderInProgress: false,
             redirectAfterPlaceOrder: false,
             defaults: {
                 template: 'Dna_Payment/payment/form'
@@ -58,18 +57,16 @@ define(
                     return false;
                 }
 
-                if (this.isPlaceOrderInProgress) {
+                if (!this.isPlaceOrderActionAllowed()) {
                     return false;
                 }
 
-                this.isPlaceOrderInProgress = true;
                 this.isPlaceOrderActionAllowed(false);
 
                 var isValid = this.validate();
                 var additionalValid = additionalValidators.validate();
 
                 if (!isValid || !additionalValid) {
-                    this.isPlaceOrderInProgress = false;
                     this.isPlaceOrderActionAllowed(true);
                     return false;
                 }
@@ -79,7 +76,6 @@ define(
                         self.afterPlaceOrder();
                     })
                     .fail(function () {
-                        self.isPlaceOrderInProgress = false;
                         self.isPlaceOrderActionAllowed(true);
                     });
 
@@ -101,7 +97,6 @@ define(
 
                 var timeoutId = setTimeout(function () {
                     requestTimedOut = true;
-                    self.isPlaceOrderInProgress = false;
                     self.isPlaceOrderActionAllowed(true);
                     self.syncCartSection();
                     fullScreenLoader.stopLoader(true);
@@ -145,7 +140,6 @@ define(
                                 cards: allowSavingCards ? savedCards : [],
                                 events: {
                                     cancelled: () => {
-                                        self.isPlaceOrderInProgress = false;
                                         self.isPlaceOrderActionAllowed(true);
                                         fullScreenLoader.startLoader();
                                         restoreQuoteAction(function () {
@@ -153,7 +147,6 @@ define(
                                         });
                                     },
                                     declined: () => {
-                                        self.isPlaceOrderInProgress = false;
                                         self.isPlaceOrderActionAllowed(true);
                                         fullScreenLoader.startLoader();
                                         restoreQuoteAction(function () {
@@ -181,7 +174,6 @@ define(
                                 dnaApi.openPaymentPage(paymentData);
                             }
                         } catch (e) {
-                            self.isPlaceOrderInProgress = false;
                             self.isPlaceOrderActionAllowed(true);
                             self.syncCartSection();
                             self.showError('Error: Failed to initialize payment window.');
@@ -192,7 +184,6 @@ define(
                         return;
                     }
 
-                    self.isPlaceOrderInProgress = false;
                     self.isPlaceOrderActionAllowed(true);
                     self.syncCartSection();
                     self.showError('Error: Fail loading order request. Please check your credentials');
