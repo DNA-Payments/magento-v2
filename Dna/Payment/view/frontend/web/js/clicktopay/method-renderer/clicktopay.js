@@ -11,12 +11,11 @@ define(
         'Magento_Checkout/js/model/payment/additional-validators',
         'Dna_Payment/js/action/restore-quote-action',
         'mage/translate',
-        'mage/url',
         'Dna_Payment/js/api',
         'dna-click-to-pay',
         'dnapayments-api'
     ],
-    function ($, Component, totals, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaClickToPay, dnaApi) {
+    function ($, Component, totals, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, api, dnaClickToPay, dnaApi) {
         'use strict';
 
         return Component.extend({
@@ -36,14 +35,16 @@ define(
                                         return false;
                                     }
 
-                                    fullScreenLoader.startLoader();
+                                    self.startPaymentLoading();
                                     $('#' + self.getCode() + '_warning_container').hide();
                                     return {};
                                 },
                                 onBeforeProcessPayment: () => {
+                                    self.markPaymentProcessingStarted();
+
                                     return new Promise((resolve, reject) => {
                                         if (!additionalValidators.validate()) {
-                                            fullScreenLoader.stopLoader();
+                                            self.resetPaymentLoading(false, 'validation failed before order');
                                             reject(new Error('Validation failed'));
                                             return;
                                         }
@@ -58,14 +59,15 @@ define(
                                                         });
                                                     })
                                                     .catch(function (error) {
-                                                        restoreQuoteAction(self.orderId);
-                                                        self.orderId = null;
-                                                        fullScreenLoader.stopLoader();
-                                                        reject(error);
+                                                        restoreQuoteAction(self.orderId).always(function () {
+                                                            self.orderId = null;
+                                                            self.resetPaymentLoading(true, 'fetch order payment data failed after order');
+                                                            reject(error);
+                                                        });
                                                     });
                                             })
                                             .fail(function (response) {
-                                                fullScreenLoader.stopLoader();
+                                                self.resetPaymentLoading(true, 'place order failed');
                                                 reject(response);
                                             });
                                     });
@@ -78,19 +80,19 @@ define(
                                 },
                                 onCancel: () => {
                                     if (self.isPaymentSuccessful) {
-                                        fullScreenLoader.stopLoader();
+                                        self.resetPaymentLoading(false, 'cancel after successful payment');
                                         return;
                                     }
                                     fullScreenLoader.startLoader();
 
                                     if (!self.orderId) {
-                                        window.location.href = urlBuilder.build('checkout/cart');
+                                        self.resetPaymentLoading(false, 'cancel without order');
                                         return;
                                     }
 
-                                    restoreQuoteAction(self.orderId, function () {
+                                    restoreQuoteAction(self.orderId).always(function () {
                                         self.orderId = null;
-                                        window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
+                                        self.resetPaymentLoading(true, 'cancel after restore quote');
                                     });
                                 },
                                 onError: (err) => {
@@ -99,12 +101,12 @@ define(
                                         return;
                                     }
                                     err = err || {};
-                                    console.log('ClickToPayComponent error', err);
 
                                     let message = err.message ||
                                         $t('Your card has not been authorised, please check the details and retry or contact your bank.');
 
                                     if (!self.orderId) {
+                                        self.resetPaymentLoading(false, 'error without order');
                                         self.showError(message);
                                         return;
                                     }

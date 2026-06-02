@@ -38,7 +38,6 @@ define(
         return Component.extend({
             isPlaceOrderActionAllowed: ko.observable(quote.billingAddress() != null),
             totals: totals,
-            isPlaceOrderInProgress: false,
             redirectAfterPlaceOrder: false,
             defaults: {
                 template: 'Dna_Payment/payment/form'
@@ -58,18 +57,16 @@ define(
                     return false;
                 }
 
-                if (this.isPlaceOrderInProgress) {
+                if (!this.isPlaceOrderActionAllowed()) {
                     return false;
                 }
 
-                this.isPlaceOrderInProgress = true;
                 this.isPlaceOrderActionAllowed(false);
 
                 var isValid = this.validate();
                 var additionalValid = additionalValidators.validate();
 
                 if (!isValid || !additionalValid) {
-                    this.isPlaceOrderInProgress = false;
                     this.isPlaceOrderActionAllowed(true);
                     return false;
                 }
@@ -79,7 +76,6 @@ define(
                         self.afterPlaceOrder();
                     })
                     .fail(function () {
-                        self.isPlaceOrderInProgress = false;
                         self.isPlaceOrderActionAllowed(true);
                     });
 
@@ -94,35 +90,30 @@ define(
             getOrder(){
                 const self = this;
                 const requestUrl = 'rest/V1/dna-payment/start-and-get';
-                let requestCompleted = false;
+                let requestTimedOut = false;
                 fullScreenLoader.startLoader();
 
-                var request;
-                try {
-                    request = storage.post(requestUrl);
-                } catch (e) {
-                    self.isPlaceOrderInProgress = false;
-                    self.isPlaceOrderActionAllowed(true);
-                    fullScreenLoader.stopLoader(true);
-                    self.showError('Error: Failed to start payment session request.');
-                    return;
-                }
+                var request = storage.post(requestUrl);
 
-                setTimeout(function () {
-                    if (requestCompleted) {
-                        return;
-                    }
-
-                    self.isPlaceOrderInProgress = false;
+                var timeoutId = setTimeout(function () {
+                    requestTimedOut = true;
                     self.isPlaceOrderActionAllowed(true);
                     self.syncCartSection();
                     fullScreenLoader.stopLoader(true);
                     self.showError('Error: Timeout while starting payment session. Please try again.');
+
+                    if (request && typeof request.abort === 'function') {
+                        request.abort();
+                    }
                 }, 15000);
 
                 request
                     .done(function (res) {
-                        requestCompleted = true;
+                        clearTimeout(timeoutId);
+                        if (requestTimedOut) {
+                            return;
+                        }
+
                         try {
                             const {paymentData, auth, isTestMode, integrationType, savedCards} = (function () {
                                 if (Array.isArray(res)) {
@@ -141,7 +132,7 @@ define(
                             const isCustomerAuthenticated = Boolean(paymentData.customerDetails && paymentData.customerDetails.accountDetails && paymentData.customerDetails.accountDetails.accountId)
                             const allowSavingCards = isCustomerAuthenticated && self.isVaultEnabled();
 
-                            var dnaApi = window.DNAPayments || window.dnaPayments;
+                            var dnaApi = window.DNAPayments;
 
                             var commonConfig = {
                                 isTestMode: isTestMode,
@@ -149,12 +140,14 @@ define(
                                 cards: allowSavingCards ? savedCards : [],
                                 events: {
                                     cancelled: () => {
+                                        self.isPlaceOrderActionAllowed(true);
                                         fullScreenLoader.startLoader();
                                         restoreQuoteAction(function () {
                                             window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
                                         });
                                     },
                                     declined: () => {
+                                        self.isPlaceOrderActionAllowed(true);
                                         fullScreenLoader.startLoader();
                                         restoreQuoteAction(function () {
                                             window.location.href = paymentData.paymentSettings.failureReturnUrl;
@@ -165,9 +158,8 @@ define(
 
                             if (dnaApi && typeof dnaApi.configure === 'function') {
                                 dnaApi.configure(commonConfig);
-                            } else if (dnaApi && typeof dnaApi.init === 'function') {
-                                // SDK compatibility fallback for versions without configure()
-                                dnaApi.init(commonConfig);
+                            } else {
+                                throw new Error('DNAPayments.configure is not available');
                             }
 
                             if (integrationType === '1') {
@@ -182,18 +174,24 @@ define(
                                 dnaApi.openPaymentPage(paymentData);
                             }
                         } catch (e) {
-                            self.isPlaceOrderInProgress = false;
                             self.isPlaceOrderActionAllowed(true);
                             self.syncCartSection();
                             self.showError('Error: Failed to initialize payment window.');
                         }
                     }).fail(function (response) {
-                    requestCompleted = true;
-                    self.isPlaceOrderInProgress = false;
+                    clearTimeout(timeoutId);
+                    if (requestTimedOut) {
+                        return;
+                    }
+
                     self.isPlaceOrderActionAllowed(true);
                     self.syncCartSection();
                     self.showError('Error: Fail loading order request. Please check your credentials');
                 }).always(function () {
+                    if (requestTimedOut) {
+                        return;
+                    }
+
                     self.syncCartSection();
                     fullScreenLoader.stopLoader(true);
                 })
@@ -206,9 +204,6 @@ define(
                     'method': this.item.method,
                     'additional_data': null
                 };
-            },
-            getPlaceOrderDeferredObject: function () {
-                return this._super();
             },
             getAddressInfo: function () {
                 const address = quote.billingAddress() ? quote.billingAddress() : quote.shippingAddress();
