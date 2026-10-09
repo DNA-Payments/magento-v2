@@ -297,7 +297,7 @@ class MainPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
     {
         $order = $payment->getOrder();
         parent::acceptPayment($payment);
-        $this->capture($payment, $order->getGrandTotal());
+        $this->capture($payment, $order->getBaseGrandTotal());
         Helpers::invoiceOrder($order, $payment->getLastTransId());
         return $this;
     }
@@ -337,7 +337,7 @@ class MainPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
             'terminal' => $this->terminalId,
             'invoiceId' => strval($order->getIncrementId()),
             'amount' => round((float)$order->getGrandTotal(), 2),
-            'currency' => $order->getBaseCurrencyCode(),
+            'currency' => $order->getOrderCurrencyCode(),
             'transaction_id' => $transactionId
         ]);
 
@@ -380,8 +380,8 @@ class MainPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
             'client_secret' => $this->clientSecret,
             'terminal' => $this->terminalId,
             'invoiceId' => strval($order->getIncrementId()),
-            'amount' => $amount,
-            'currency' => $order->getBaseCurrencyCode(),
+            'amount' => \Dna\Payment\Model\Helpers::toOrderAmount($payment, $amount),
+            'currency' => $order->getOrderCurrencyCode(),
             'transaction_id' => $transactionId
         ]);
         return $this;
@@ -415,8 +415,8 @@ class MainPaymentMethod extends \Magento\Payment\Model\Method\AbstractMethod
                 'client_secret' => $this->clientSecret,
                 'terminal' => $this->terminalId,
                 'invoiceId' => strval($order->getIncrementId()),
-                'amount' => $amount,
-                'currency' => $order->getBaseCurrencyCode(),
+                'amount' => \Dna\Payment\Model\Helpers::toOrderAmount($payment, $amount),
+                'currency' => $order->getOrderCurrencyCode(),
                 'transaction_id' => $transactionId
             ]);
 
