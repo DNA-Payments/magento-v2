@@ -54,6 +54,38 @@ class Helpers
         $transaction->save();
     }
 
+    /**
+     * DNA takes refunds and captures in the currency the customer paid in (the order currency),
+     * while Magento passes payment methods amounts in the base currency.
+     * A credit memo (full or partial) and a full-order amount use their exact order-currency totals;
+     * any other amount is converted with the order's exchange rate.
+     */
+    public static function toOrderAmount($payment, $baseAmount)
+    {
+        $order = $payment->getOrder();
+        $baseAmount = round((float) $baseAmount, 2);
+        if ($order->getBaseCurrencyCode() === $order->getOrderCurrencyCode()) {
+            return $baseAmount;
+        }
+
+        $creditmemo = $payment->getCreditmemo();
+        if ($creditmemo && round((float) $creditmemo->getBaseGrandTotal(), 2) === $baseAmount) {
+            return round((float) $creditmemo->getGrandTotal(), 2);
+        }
+        if (round((float) $order->getBaseGrandTotal(), 2) === $baseAmount) {
+            return round((float) $order->getGrandTotal(), 2);
+        }
+        $rate = (float) $order->getBaseToOrderRate();
+        if ($rate <= 0) {
+            throw new LocalizedException(__(
+                'Cannot convert the amount to %1 for order #%2: the order has no exchange rate.',
+                $order->getOrderCurrencyCode(),
+                $order->getIncrementId()
+            ));
+        }
+        return round($baseAmount * $rate, 2);
+    }
+
     public static function isValidStatusPayPalStatus($paypalCaptureStatus)
     {
         if (empty($paypalCaptureStatus)) {

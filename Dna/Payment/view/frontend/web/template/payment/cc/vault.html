@@ -113,6 +113,7 @@
                         type="submit"
                         data-bind="
                             click: placeOrder,
+                            enable: isPlaceOrderActionAllowed,
                             attr: {title: $t('Place Order')}">
                     <span translate="'Place Order'"></span>
                 </button>
