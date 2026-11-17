@@ -37,15 +37,22 @@ define(
                 });
 
                 quote.totals.subscribe(function (newTotals) {
-                    if (newTotals && newTotals.grand_total && self.grand_total && self.grand_total !== newTotals.grand_total) {
+                    if (self.isPaymentContainerRendered && newTotals && newTotals.grand_total && self.grand_total && self.grand_total !== newTotals.grand_total) {
                         self.renderPaymentComponent(self, quoteId);
                     }
                     self.grand_total = newTotals.grand_total;
                 });
 
-                self.renderPaymentComponent(self, quoteId);
-
                 return this;
+            },
+            /**
+             * Render the DNA component only once its container is in the DOM: payment data can
+             * resolve from cache before the template is rendered, and the SDK then gets an
+             * undefined containerElement (e.g. Alipay+ "Failed to render button").
+             */
+            onPaymentContainerRendered: function () {
+                this.isPaymentContainerRendered = true;
+                this.renderPaymentComponent(this, this.quoteId);
             },
             createPaymentComponent: function (paymentData, auth, isTestMode) {
             },
