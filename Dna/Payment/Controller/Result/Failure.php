@@ -3,6 +3,7 @@
 namespace Dna\Payment\Controller\Result;
 
 use Dna\Payment\Helper\DnaLogger;
+use Dna\Payment\Model\TransactionStatus;
 use Magento\Catalog\Controller\Product\View\ViewInterface;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
@@ -30,6 +31,7 @@ class Failure extends Action implements ViewInterface
     protected $config;
     protected $messageManager;
     protected $dnaLogger;
+    protected $transactionStatus;
 
     /**
      * Failure constructor.
@@ -42,7 +44,8 @@ class Failure extends Action implements ViewInterface
         ManagerInterface $messageManager,
         ScopeConfigInterface $scopeConfig,
         OrderRepositoryInterface $orderRepository,
-        DnaLogger $dnaLogger
+        DnaLogger $dnaLogger,
+        TransactionStatus $transactionStatus
     )
     {
         $this->_context = $context;
@@ -51,6 +54,7 @@ class Failure extends Action implements ViewInterface
         $this->_scopeConfig = $scopeConfig;
         $this->orderRepository = $orderRepository;
         $this->dnaLogger = $dnaLogger;
+        $this->transactionStatus = $transactionStatus;
         parent::__construct($context);
 
     }
@@ -66,6 +70,31 @@ class Failure extends Action implements ViewInterface
 
         $order = $_checkoutSession->getLastRealOrder();
         $status = $order->getStatus();
+
+        // Never reopen the cart of a paid order, or of an order whose payment result is not known yet.
+        if ($order->getId() && $order->getState() !== $order::STATE_CANCELED) {
+            $dnaStatus = $order->getState() === $order::STATE_PENDING_PAYMENT
+                ? $this->transactionStatus->check($order)
+                : TransactionStatus::PAID;
+
+            if ($dnaStatus === TransactionStatus::PAID) {
+                $this->dnaLogger->info('Failure controller kept paid order', [
+                    'order_id' => $order->getIncrementId(),
+                    'state' => $order->getState(),
+                ]);
+                return $this->resultRedirectFactory->create()->setPath('checkout/onepage/success');
+            }
+            if ($dnaStatus === TransactionStatus::UNKNOWN) {
+                $this->dnaLogger->info('Failure controller kept order with unconfirmed payment', [
+                    'order_id' => $order->getIncrementId(),
+                ]);
+                $this->messageManager->addNoticeMessage(__(
+                    'We are still confirming the payment for order #%1. Please check the order status before paying again.',
+                    $order->getIncrementId()
+                ));
+                return $this->resultRedirectFactory->create()->setPath('checkout/cart');
+            }
+        }
 
         if ($order->getStatus() == $order::STATE_PENDING_PAYMENT) {
             try {
@@ -93,7 +122,12 @@ class Failure extends Action implements ViewInterface
             }
 
             $resultRedirect = $this->resultRedirectFactory->create();
-            $resultRedirect->setPath('checkout/cart');
+            if ($this->getRequest()->getParam('cancel')) {
+                $resultRedirect->setUrl($this->_url->getUrl('checkout') . '#payment');
+            } else {
+                $resultRedirect->setPath('checkout/cart');
+            }
+
             return $resultRedirect;
         }
 

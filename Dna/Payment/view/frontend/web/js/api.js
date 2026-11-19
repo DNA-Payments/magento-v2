@@ -6,9 +6,26 @@ define([
 ], function ($) {
     'use strict';
 
+    var quotePaymentDataRequests = {};
+    var quotePaymentDataCache = {};
+
     return {
-        fetchQuotePaymentData: function (quoteId) {
-            return new Promise((resolve, reject) => {
+        clearCache: function () {
+            quotePaymentDataCache = {};
+            quotePaymentDataRequests = {};
+        },
+        fetchQuotePaymentData: function (quoteId, cacheKey) {
+            cacheKey = cacheKey || String(quoteId || '');
+
+            if (quotePaymentDataCache[cacheKey]) {
+                return Promise.resolve(quotePaymentDataCache[cacheKey]);
+            }
+
+            if (quotePaymentDataRequests[cacheKey]) {
+                return quotePaymentDataRequests[cacheKey];
+            }
+
+            quotePaymentDataRequests[cacheKey] = new Promise((resolve, reject) => {
                 $.ajax({
                     url: '/rest/V1/dna-payment/get-quote-payment-data?quoteId=' + quoteId,
                     type: 'get',
@@ -24,13 +41,19 @@ define([
                             }
                             return res || {}
                         })()
-                        resolve({ paymentData, auth, isTestMode });
+                        quotePaymentDataCache[cacheKey] = { paymentData, auth, isTestMode };
+                        resolve(quotePaymentDataCache[cacheKey]);
                     },
                     error: function (err) {
                         reject(err);
+                    },
+                    complete: function () {
+                        delete quotePaymentDataRequests[cacheKey];
                     }
                 })
             })
+
+            return quotePaymentDataRequests[cacheKey];
         },
         fetchOrderPaymentData: function (orderId) {
             return new Promise((resolve, reject) => {
