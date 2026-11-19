@@ -22,6 +22,7 @@ define(
                 let self = this;
                 const accessToken = auth.access_token;
                 self.isPaymentSuccessful = false;
+                self.isButtonLoaded = false;
 
                 window.DNAPayments.ApplePayComponent.init({
                     containerElement: $('#' + self.getCode() + '_container')[0],
@@ -109,7 +110,10 @@ define(
 
                             if (!self.orderId) {
                                 self.resetPaymentLoading(false, 'error without order');
-                                self.showError(message);
+                                // Button already rendered (e.g. Chrome QR flow): don't show the init/validation error
+                                if (!(self.isButtonLoaded && (err.code === 1002 || err.code === 1003))) {
+                                    self.showError(message);
+                                }
                                 return;
                             }
 
@@ -121,6 +125,7 @@ define(
                             });
                         },
                         onLoad: () => {
+                            self.isButtonLoaded = true;
                             fullScreenLoader.stopLoader();
                         },
                     },
