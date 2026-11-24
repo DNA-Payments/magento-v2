@@ -754,7 +754,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->sendAnalytics();
 
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
-        $isValidSignature = $this->dnaPayment->isValidSignature([
+        $isValidSignature = $this->isValidWebhookSignature([
             'id' => $id,
             'amount' => $amount,
             'currency' => $currency,
@@ -787,6 +787,19 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         if (!$this->isDNAPaymentOrder($order)) {
             return;
+        }
+
+        if (!$isValidSignature) {
+            $this->dnaLogger->warning('DNA confirm webhook rejected: invalid signature', [
+                'invoiceId' => $dna_order_number,
+                'orderId' => $order->getIncrementId(),
+            ]);
+            return $invoiceId;
+        }
+
+        if ($success) {
+            // Same checks as WooCommerce 4.4.2: transaction id required, amount/currency must match the order.
+            $this->assertWebhookMatchesOrder($order, $id, $amount, $currency);
         }
 
         if ($isValidSignature && $success) {
@@ -874,6 +887,65 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     }
 
     /**
+     * Strict webhook signature check, done in the module so it does not depend on the SDK version
+     * (dnapayments-sdk-php 2.2.x cannot be installed on Magento 2.4.7+ because of its
+     * symfony/deprecation-contracts 2.5.3 requirement).
+     *
+     * @param array $data
+     * @param mixed $secret
+     * @return bool
+     */
+    private function isValidWebhookSignature(array $data, $secret)
+    {
+        if (!is_string($secret) || $secret === ''
+            || !isset($data['signature']) || !is_string($data['signature']) || $data['signature'] === '') {
+            return false;
+        }
+
+        $string = ($data['id'] ?? '') . ($data['amount'] ?? '') . ($data['currency'] ?? '')
+            . ($data['invoiceId'] ?? '') . ($data['errorCode'] ?? '') . json_encode($data['success'] ?? null);
+        $expected = base64_encode(hash_hmac('sha256', $string, $secret, true));
+
+        return hash_equals($expected, $data['signature']);
+    }
+
+    /**
+     * Reject a success webhook whose transaction id, amount or currency do not match the order.
+     *
+     * @param Order $order
+     * @param mixed $id
+     * @param mixed $amount
+     * @param mixed $currency
+     * @return void
+     * @throws \Exception
+     */
+    private function assertWebhookMatchesOrder(Order $order, $id, $amount, $currency)
+    {
+        $reason = null;
+        $context = ['orderId' => $order->getIncrementId()];
+
+        $expectedAmount = number_format((float)$order->getGrandTotal(), 2, '.', '');
+        $actualAmount = is_numeric($amount) ? number_format((float)$amount, 2, '.', '') : null;
+        $expectedCurrency = strtoupper((string)$order->getOrderCurrencyCode());
+
+        if (!is_scalar($id) || is_bool($id) || trim((string)$id) === '') {
+            $reason = 'missing transaction id';
+        } elseif ($actualAmount === null || $actualAmount !== $expectedAmount) {
+            $reason = 'amount mismatch';
+            $context += ['expected' => $expectedAmount, 'got' => $amount];
+        } elseif (!is_string($currency) || strtoupper($currency) !== $expectedCurrency) {
+            $reason = 'currency mismatch';
+            $context += ['expected' => $expectedCurrency, 'got' => $currency];
+        }
+
+        if ($reason !== null) {
+            // Details go to the log only; the response must not reveal order data to the caller.
+            $this->dnaLogger->warning('DNA confirm webhook rejected: ' . $reason, $context);
+            throw new \Exception('Invalid webhook data');
+        }
+    }
+
+    /**
      * @param string $invoiceId
      * @param string $id
      * @param string $amount
@@ -921,7 +993,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $orderPayment = $order->getPayment();
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
 
-        if ($this->dnaPayment->isValidSignature([
+        if ($this->isValidWebhookSignature([
             'id' => $id,
             'amount' => $amount,
             'currency' => $currency,
