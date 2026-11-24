@@ -921,21 +921,27 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
      */
     private function assertWebhookMatchesOrder(Order $order, $id, $amount, $currency)
     {
-        if (!is_scalar($id) || is_bool($id) || trim((string)$id) === '') {
-            throw new \Exception('DNA confirm webhook rejected: missing transaction id for order ' . $order->getIncrementId());
-        }
+        $reason = null;
+        $context = ['orderId' => $order->getIncrementId()];
 
         $expectedAmount = number_format((float)$order->getGrandTotal(), 2, '.', '');
         $actualAmount = is_numeric($amount) ? number_format((float)$amount, 2, '.', '') : null;
-        if ($actualAmount === null || $actualAmount !== $expectedAmount) {
-            throw new \Exception('DNA confirm webhook rejected: amount mismatch for order ' . $order->getIncrementId()
-                . ' (expected ' . $expectedAmount . ', got ' . var_export($amount, true) . ')');
+        $expectedCurrency = strtoupper((string)$order->getOrderCurrencyCode());
+
+        if (!is_scalar($id) || is_bool($id) || trim((string)$id) === '') {
+            $reason = 'missing transaction id';
+        } elseif ($actualAmount === null || $actualAmount !== $expectedAmount) {
+            $reason = 'amount mismatch';
+            $context += ['expected' => $expectedAmount, 'got' => $amount];
+        } elseif (!is_string($currency) || strtoupper($currency) !== $expectedCurrency) {
+            $reason = 'currency mismatch';
+            $context += ['expected' => $expectedCurrency, 'got' => $currency];
         }
 
-        $expectedCurrency = strtoupper((string)$order->getOrderCurrencyCode());
-        if (!is_string($currency) || strtoupper($currency) !== $expectedCurrency) {
-            throw new \Exception('DNA confirm webhook rejected: currency mismatch for order ' . $order->getIncrementId()
-                . ' (expected ' . $expectedCurrency . ', got ' . var_export($currency, true) . ')');
+        if ($reason !== null) {
+            // Details go to the log only; the response must not reveal order data to the caller.
+            $this->dnaLogger->warning('DNA confirm webhook rejected: ' . $reason, $context);
+            throw new \Exception('Invalid webhook data');
         }
     }
 
