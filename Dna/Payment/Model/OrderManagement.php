@@ -754,7 +754,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->sendAnalytics();
 
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
-        $isValidSignature = $this->dnaPayment->isValidSignature([
+        $isValidSignature = !empty($secret) && is_string($signature) && $signature !== '' && $this->dnaPayment->isValidSignature([
             'id' => $id,
             'amount' => $amount,
             'currency' => $currency,
@@ -787,6 +787,19 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
 
         if (!$this->isDNAPaymentOrder($order)) {
             return;
+        }
+
+        if (!$isValidSignature) {
+            $this->dnaLogger->warning('DNA confirm webhook rejected: invalid signature', [
+                'invoiceId' => $dna_order_number,
+                'orderId' => $order->getIncrementId(),
+            ]);
+            return $invoiceId;
+        }
+
+        if ($success) {
+            // Same checks as WooCommerce 4.4.2: transaction id required, amount/currency must match the order.
+            $this->assertWebhookMatchesOrder($order, $id, $amount, $currency);
         }
 
         if ($isValidSignature && $success) {
@@ -871,6 +884,36 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
             }
         }
         return $invoiceId;
+    }
+
+    /**
+     * Reject a success webhook whose transaction id, amount or currency do not match the order.
+     *
+     * @param Order $order
+     * @param mixed $id
+     * @param mixed $amount
+     * @param mixed $currency
+     * @return void
+     * @throws \Exception
+     */
+    private function assertWebhookMatchesOrder(Order $order, $id, $amount, $currency)
+    {
+        if (!is_scalar($id) || is_bool($id) || trim((string)$id) === '') {
+            throw new \Exception('DNA confirm webhook rejected: missing transaction id for order ' . $order->getIncrementId());
+        }
+
+        $expectedAmount = number_format((float)$order->getGrandTotal(), 2, '.', '');
+        $actualAmount = is_numeric($amount) ? number_format((float)$amount, 2, '.', '') : null;
+        if ($actualAmount === null || $actualAmount !== $expectedAmount) {
+            throw new \Exception('DNA confirm webhook rejected: amount mismatch for order ' . $order->getIncrementId()
+                . ' (expected ' . $expectedAmount . ', got ' . var_export($amount, true) . ')');
+        }
+
+        $expectedCurrency = strtoupper((string)$order->getOrderCurrencyCode());
+        if (!is_string($currency) || strtoupper($currency) !== $expectedCurrency) {
+            throw new \Exception('DNA confirm webhook rejected: currency mismatch for order ' . $order->getIncrementId()
+                . ' (expected ' . $expectedCurrency . ', got ' . var_export($currency, true) . ')');
+        }
     }
 
     /**
