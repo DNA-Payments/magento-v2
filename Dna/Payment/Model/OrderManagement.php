@@ -754,7 +754,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $this->sendAnalytics();
 
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
-        $isValidSignature = !empty($secret) && is_string($signature) && $signature !== '' && $this->dnaPayment->isValidSignature([
+        $isValidSignature = $this->isValidWebhookSignature([
             'id' => $id,
             'amount' => $amount,
             'currency' => $currency,
@@ -887,6 +887,29 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
     }
 
     /**
+     * Strict webhook signature check, done in the module so it does not depend on the SDK version
+     * (dnapayments-sdk-php 2.2.x cannot be installed on Magento 2.4.7+ because of its
+     * symfony/deprecation-contracts 2.5.3 requirement).
+     *
+     * @param array $data
+     * @param mixed $secret
+     * @return bool
+     */
+    private function isValidWebhookSignature(array $data, $secret)
+    {
+        if (!is_string($secret) || $secret === ''
+            || !isset($data['signature']) || !is_string($data['signature']) || $data['signature'] === '') {
+            return false;
+        }
+
+        $string = ($data['id'] ?? '') . ($data['amount'] ?? '') . ($data['currency'] ?? '')
+            . ($data['invoiceId'] ?? '') . ($data['errorCode'] ?? '') . json_encode($data['success'] ?? null);
+        $expected = base64_encode(hash_hmac('sha256', $string, $secret, true));
+
+        return hash_equals($expected, $data['signature']);
+    }
+
+    /**
      * Reject a success webhook whose transaction id, amount or currency do not match the order.
      *
      * @param Order $order
@@ -964,7 +987,7 @@ class OrderManagement implements \Dna\Payment\Api\OrderManagementInterface
         $orderPayment = $order->getPayment();
         $secret = $this->isTestMode ? $this->config->getClientSecretTest($this->storeId) : $this->config->getClientSecret($this->storeId);
 
-        if ($this->dnaPayment->isValidSignature([
+        if ($this->isValidWebhookSignature([
             'id' => $id,
             'amount' => $amount,
             'currency' => $currency,
