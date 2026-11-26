@@ -3,6 +3,7 @@
 namespace Dna\Payment\Observer;
 
 use Dna\Payment\Helper\DnaLogger;
+use Dna\Payment\Model\TransactionStatus;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Checkout\Model\Session as CheckoutSession;
@@ -46,12 +47,18 @@ class RestoreQuoteOnCheckout implements ObserverInterface
      */
     private $dnaLogger;
 
+    /**
+     * @var TransactionStatus
+     */
+    private $transactionStatus;
+
     public function __construct(
         CheckoutSession $checkoutSession,
         CartRepositoryInterface $cartRepository,
         OrderRepositoryInterface $orderRepository,
         OrderCollectionFactory $orderCollectionFactory,
-        DnaLogger $dnaLogger
+        DnaLogger $dnaLogger,
+        TransactionStatus $transactionStatus
     )
     {
         $this->checkoutSession = $checkoutSession;
@@ -59,6 +66,7 @@ class RestoreQuoteOnCheckout implements ObserverInterface
         $this->orderRepository = $orderRepository;
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->dnaLogger = $dnaLogger;
+        $this->transactionStatus = $transactionStatus;
     }
 
     /**
@@ -104,9 +112,21 @@ class RestoreQuoteOnCheckout implements ObserverInterface
                 ->addFieldToFilter('quote_id', $quoteId)
                 ->addFieldToFilter('state', Order::STATE_PENDING_PAYMENT);
 
+            $keepQuote = false;
             foreach ($pendingOrders as $pendingOrder) {
                 $pendingPaymentMethod = $pendingOrder->getPayment() ? $pendingOrder->getPayment()->getMethod() : "";
                 if (strpos($pendingPaymentMethod, "dna_payment") === false) {
+                    continue;
+                }
+
+                // The payment may already be approved in DNA while its callback is still on the way.
+                $status = $this->transactionStatus->check($pendingOrder);
+                if ($status === TransactionStatus::PAID || $status === TransactionStatus::UNKNOWN) {
+                    $keepQuote = true;
+                    $this->dnaLogger->info('RestoreQuoteOnCheckout kept pending_payment order', [
+                        'order_id' => $pendingOrder->getIncrementId(),
+                        'dna_status' => $status,
+                    ]);
                     continue;
                 }
 
@@ -117,6 +137,10 @@ class RestoreQuoteOnCheckout implements ObserverInterface
                         'order_id' => $pendingOrder->getIncrementId(),
                     ]);
                 }
+            }
+
+            if ($keepQuote) {
+                return;
             }
 
             // Restore the quote

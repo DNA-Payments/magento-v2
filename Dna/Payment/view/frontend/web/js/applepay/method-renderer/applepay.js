@@ -11,11 +11,10 @@ define(
         'Magento_Checkout/js/model/payment/additional-validators',
         'Dna_Payment/js/action/restore-quote-action',
         'mage/translate',
-        'mage/url',
         'Dna_Payment/js/api',
         'dna-apple-pay'
     ],
-    function ($, Component, totals, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, urlBuilder, api, dnaApplePay) {
+    function ($, Component, totals, fullScreenLoader, redirectOnSuccessAction, additionalValidators, restoreQuoteAction, $t, api, dnaApplePay) {
         'use strict';
 
         return Component.extend({
@@ -23,6 +22,7 @@ define(
                 let self = this;
                 const accessToken = auth.access_token;
                 self.isPaymentSuccessful = false;
+                self.isButtonLoaded = false;
 
                 window.DNAPayments.ApplePayComponent.init({
                     containerElement: $('#' + self.getCode() + '_container')[0],
@@ -33,13 +33,17 @@ define(
                                 return false;
                             }
 
-                            fullScreenLoader.startLoader();
+                            self.startPaymentLoading();
                             $('#' + self.getCode() + '_warning_container').hide();
+
+                            return {};
                         },
                         onBeforeProcessPayment: () => {
+                            self.markPaymentProcessingStarted();
+
                             return new Promise((resolve, reject) => {
                                 if (!additionalValidators.validate()) {
-                                    fullScreenLoader.stopLoader();
+                                    self.resetPaymentLoading(false, 'validation failed before order');
                                     reject(new Error('Validation failed'));
                                     return;
                                 }
@@ -54,14 +58,15 @@ define(
                                                 });
                                             })
                                             .catch(function (error) {
-                                                restoreQuoteAction(self.orderId);
-                                                self.orderId = null;
-                                                fullScreenLoader.stopLoader();
-                                                reject(error);
+                                                restoreQuoteAction(self.orderId).always(function () {
+                                                    self.orderId = null;
+                                                    self.resetPaymentLoading(true, 'fetch order payment data failed after order');
+                                                    reject(error);
+                                                });
                                             });
                                     })
                                     .fail(function (response) {
-                                        fullScreenLoader.stopLoader();
+                                        self.resetPaymentLoading(true, 'place order failed');
                                         reject(response);
                                     });
                             });
@@ -74,19 +79,19 @@ define(
                         },
                         onCancel: () => {
                             if (self.isPaymentSuccessful) {
-                                fullScreenLoader.stopLoader();
+                                self.resetPaymentLoading(false, 'cancel after successful payment');
                                 return;
                             }
                             fullScreenLoader.startLoader();
 
                             if (!self.orderId) {
-                                window.location.href = urlBuilder.build('checkout/cart');
+                                self.resetPaymentLoading(true, 'apple pay cancel without order');
                                 return;
                             }
 
-                            restoreQuoteAction(self.orderId, function () {
+                            restoreQuoteAction(self.orderId).always(function () {
                                 self.orderId = null;
-                                window.location.href = paymentData.paymentSettings.failureReturnUrl + '?cancel=1';
+                                self.resetPaymentLoading(true, 'cancel after restore quote');
                             });
                         },
                         onError: (err) => {
@@ -95,7 +100,6 @@ define(
                                 return;
                             }
                             err = err || {};
-                            console.log('ApplePayComponent error', err);
 
                             let message = err.message ||
                                 $t('Your card has not been authorised, please check the details and retry or contact your bank.');
@@ -105,7 +109,11 @@ define(
                             }
 
                             if (!self.orderId) {
-                                self.showError(message);
+                                self.resetPaymentLoading(false, 'error without order');
+                                // Button already rendered (e.g. Chrome QR flow): don't show the init/validation error
+                                if (!(self.isButtonLoaded && (err.code === 1002 || err.code === 1003))) {
+                                    self.showError(message);
+                                }
                                 return;
                             }
 
@@ -117,6 +125,7 @@ define(
                             });
                         },
                         onLoad: () => {
+                            self.isButtonLoaded = true;
                             fullScreenLoader.stopLoader();
                         },
                     },

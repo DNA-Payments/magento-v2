@@ -39,27 +39,38 @@ class DnaModuleVersion extends AbstractHelper
     /**
      * Get module version from composer.json
      *
+     * The module is registered from Dna/Payment, while the package composer.json
+     * sits two levels up (vendor/dna/magento-2/composer.json), so both places are checked.
+     *
      * @param string $moduleName
      * @return string
      */
     public function getModuleVersion(string $moduleName): string
     {
         $path = $this->componentRegistrar->getPath(ComponentRegistrar::MODULE, $moduleName);
-        $composerFilePath = $path . '/composer.json';
-
-        if ($this->fileDriver->isExists($composerFilePath)) {
-            $composerJsonData = $this->fileDriver->fileGetContents($composerFilePath);
-            $data = json_decode($composerJsonData);
-
-            if (empty($data->version)) {
-                $this->dnaLogger->warning('composer.json file does not contain version.', ['file' => $composerFilePath]);
-            } else {
-                return $data->version;
-            }
-        } else {
-            $this->dnaLogger->warning('composer.json file not found.', ['file' => $composerFilePath]);
+        if (!$path) {
+            return 'unknown';
         }
 
+        foreach ([$path . '/composer.json', dirname($path, 2) . '/composer.json'] as $composerFilePath) {
+            if (!$this->fileDriver->isExists($composerFilePath)) {
+                continue;
+            }
+
+            $data = json_decode($this->fileDriver->fileGetContents($composerFilePath));
+            if (isset($data->name) && $data->name !== 'dna/magento-2') {
+                continue;
+            }
+
+            if (!empty($data->version)) {
+                return $data->version;
+            }
+
+            $this->dnaLogger->warning('composer.json file does not contain version.', ['file' => $composerFilePath]);
+            return 'unknown';
+        }
+
+        $this->dnaLogger->warning('composer.json file not found.', ['path' => $path]);
         return 'unknown';
     }
 }
